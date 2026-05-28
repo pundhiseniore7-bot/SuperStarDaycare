@@ -1,374 +1,2049 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Superstar Daycare</title>
-<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0A0A1A;--panel:rgba(10,10,30,0.88);--text:#E8E8F0;--accent:#FF4444;--success:#00FF88;--warn:#FFB800;--muted:#6A6A8A}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);touch-action:none}
-canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
-/* HUD */
-#hud{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:10;opacity:0;transition:opacity .5s}
-#hud.show{opacity:1}
-.hud-box{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:14px;font-weight:600;letter-spacing:.5px;backdrop-filter:blur(4px)}
-#gen-counter{color:var(--success)}
-#battery-box{color:var(--warn);display:flex;align-items:center;gap:6px}
-#battery-bar{width:50px;height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
-#battery-fill{height:100%;background:var(--warn);border-radius:5px;transition:width .3s}
-#battery-fill.low{background:var(--accent);animation:blink .5s infinite}
-#stamina-wrap{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:120px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;z-index:10;opacity:0;transition:opacity .3s;pointer-events:none}
-#stamina-wrap.show{opacity:1}
-#stamina-fill{height:100%;background:#4ECDC4;border-radius:3px;transition:width .1s}
-/* Controls */
-#controls{position:fixed;bottom:0;left:0;right:0;height:180px;z-index:10;pointer-events:none;opacity:0;transition:opacity .5s}
-#controls.show{opacity:1}
-#joystick-zone{position:absolute;left:10px;bottom:10px;width:130px;height:130px;pointer-events:auto}
-#joystick-base{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);position:relative}
-#joystick-thumb{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:none}
-#action-buttons{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
-.act-btn{width:56px;height:56px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-direction:column;backdrop-filter:blur(4px);cursor:pointer}
-.act-btn:active{background:rgba(255,255,255,.2);transform:scale(.93)}
-.act-btn .lbl{font-size:8px;font-weight:600;margin-top:2px;opacity:.7}
-#look-zone{position:absolute;right:80px;bottom:10px;left:150px;top:10px;pointer-events:auto}
-/* Dialogue */
-#dialogue-box{position:fixed;bottom:30px;left:15px;right:15px;background:var(--panel);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:18px 22px;z-index:20;opacity:0;transform:translateY(20px);transition:all .4s;pointer-events:none;backdrop-filter:blur(8px)}
-#dialogue-box.show{opacity:1;transform:translateY(0);pointer-events:auto}
-#speaker-name{font-family:'Creepster',cursive;font-size:18px;margin-bottom:6px}
-#speaker-name.sun{color:#FFD700}
-#speaker-name.moon{color:#8866FF}
-#dialogue-text{font-size:17px;line-height:1.5;min-height:50px}
-#tap-continue{font-size:12px;color:var(--muted);text-align:right;margin-top:8px;animation:blink 1.2s infinite}
-/* Screens */
-.screen-overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
-#start-screen{background:radial-gradient(ellipse at 50% 40%,#1A1028 0%,#0A0A1A 70%)}
-#start-screen .title{font-family:'Creepster',cursive;font-size:clamp(36px,8vw,64px);color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.3),0 0 60px rgba(255,215,0,.1);margin-bottom:8px;letter-spacing:2px}
-#start-screen .subtitle{font-size:clamp(13px,3vw,18px);color:var(--muted);margin-bottom:40px;letter-spacing:3px;text-transform:uppercase}
-.menu-btn{width:200px;padding:14px 0;border:2px solid rgba(255,215,0,.3);border-radius:8px;background:rgba(255,215,0,.08);color:#FFD700;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;cursor:pointer;margin:6px 0;transition:all .2s;text-transform:uppercase}
-.menu-btn:hover,.menu-btn:active{background:rgba(255,215,0,.2);border-color:rgba(255,215,0,.6);transform:scale(1.03)}
-.menu-btn.secondary{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:var(--text);font-size:15px}
-#game-over-screen{background:rgba(10,0,0,.95);opacity:0;pointer-events:none}
-#game-over-screen.show{opacity:1;pointer-events:auto}
-#game-over-screen .go-title{font-family:'Creepster',cursive;font-size:clamp(40px,10vw,72px);color:var(--accent);text-shadow:0 0 40px rgba(255,0,0,.4);margin-bottom:10px}
-#game-over-screen .go-sub{color:var(--muted);margin-bottom:40px;font-size:16px}
-#win-screen{background:radial-gradient(ellipse at 50% 40%,#2A2010 0%,#0A0A0A 70%);opacity:0;pointer-events:none}
-#win-screen.show{opacity:1;pointer-events:auto}
-#win-screen .win-title{font-family:'Creepster',cursive;font-size:clamp(36px,9vw,64px);color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.3);margin-bottom:10px}
-#win-screen .win-sub{color:var(--success);margin-bottom:40px;font-size:16px}
-/* Settings */
-#settings-screen{background:rgba(5,5,20,.95);opacity:0;pointer-events:none;z-index:55}
-#settings-screen.show{opacity:1;pointer-events:auto}
-#settings-screen h2{font-family:'Creepster',cursive;font-size:28px;color:var(--text);margin-bottom:30px}
-.setting-row{width:280px;margin:12px 0;display:flex;flex-direction:column;gap:4px}
-.setting-row label{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
-.setting-row input[type=range]{width:100%;accent-color:#FFD700;height:6px;cursor:pointer}
-.setting-row .val{font-size:12px;color:var(--text);text-align:right}
-/* Jumpscare */
-#jumpscare{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
-#jumpscare.show{opacity:1;pointer-events:auto}
-#jumpscare canvas{width:100%;height:100%}
-/* Transition */
-#transition{position:fixed;inset:0;z-index:40;background:#000;opacity:0;pointer-events:none}
-#transition.show{opacity:1;pointer-events:auto}
-/* Particles for start screen */
-.particle{position:absolute;border-radius:50%;pointer-events:none;animation:float linear infinite}
-@keyframes float{0%{transform:translateY(0) scale(1);opacity:.6}50%{opacity:1}100%{transform:translateY(-100vh) scale(.5);opacity:0}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes shake{0%,100%{transform:translate(0)}10%{transform:translate(-8px,5px)}20%{transform:translate(7px,-6px)}30%{transform:translate(-5px,8px)}40%{transform:translate(6px,-4px)}50%{transform:translate(-7px,3px)}60%{transform:translate(4px,-7px)}70%{transform:translate(-3px,5px)}80%{transform:translate(5px,-3px)}90%{transform:translate(-4px,6px)}}
-.shaking{animation:shake .4s ease-in-out}
-/* Flashlight flicker overlay */
-#flicker-overlay{position:fixed;inset:0;z-index:5;pointer-events:none;background:transparent;opacity:0;transition:opacity .05s}
-@media(min-width:768px){.act-btn{width:64px;height:64px}#joystick-zone{width:150px;height:150px}#joystick-base{width:150px;height:150px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Superstar Daycare — FNAF: Security Breach</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Creepster&family=Inter:wght@300;400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: 'Inter', sans-serif;
+            cursor: default;
+            user-select: none
+        }
+
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1
+        }
+
+        /* === MAIN MENU === */
+        #mainMenu {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 50% 40%, #1a0e00 0%, #0a0500 50%, #000 100%)
+        }
+
+        #mainMenu .stars {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none
+        }
+
+        #mainMenu .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #FFD700;
+            border-radius: 50%;
+            animation: twinkle 2s ease-in-out infinite
+        }
+
+        @keyframes twinkle {
+
+            0%,
+            100% {
+                opacity: .2
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        #mainMenu h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            color: #FFD700;
+            text-shadow: 0 0 60px rgba(255, 215, 0, .4), 0 4px 0 #B8860B;
+            animation: titleBounce 3s ease-in-out infinite;
+            position: relative;
+            z-index: 2
+        }
+
+        @keyframes titleBounce {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-8px)
+            }
+        }
+
+        #mainMenu .sub {
+            font-family: 'Creepster', cursive;
+            font-size: clamp(1rem, 2.5vw, 1.6rem);
+            color: #cc3300;
+            margin: .5rem 0 2.5rem;
+            letter-spacing: 6px;
+            position: relative;
+            z-index: 2
+        }
+
+        .mbtn {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.2rem;
+            padding: 14px 48px;
+            border: 2px solid #FFD700;
+            background: transparent;
+            color: #FFD700;
+            cursor: pointer;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            transition: all .3s;
+            position: relative;
+            z-index: 2
+        }
+
+        .mbtn:hover {
+            background: #FFD700;
+            color: #1a0e00;
+            transform: scale(1.06);
+            box-shadow: 0 0 40px rgba(255, 215, 0, .35)
+        }
+
+        .ctrl-info {
+            margin-top: 2rem;
+            color: #665533;
+            font-size: .8rem;
+            text-align: center;
+            line-height: 2;
+            position: relative;
+            z-index: 2
+        }
+
+        .ctrl-info kbd {
+            background: #1a1200;
+            border: 1px solid #332200;
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: #aa8833;
+            font-family: monospace;
+            font-size: .75rem
+        }
+
+        /* === HUD === */
+        #hud {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            pointer-events: none;
+            display: none
+        }
+
+        .hud-gen {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 6px;
+            align-items: center
+        }
+
+        .gen-dot {
+            width: 28px;
+            height: 28px;
+            border: 2px solid #444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #444;
+            background: rgba(0, 0, 0, .5);
+            transition: all .5s
+        }
+
+        .gen-dot.on {
+            border-color: #00ff88;
+            color: #00ff88;
+            background: rgba(0, 255, 136, .15);
+            box-shadow: 0 0 12px rgba(0, 255, 136, .3)
+        }
+
+        .hud-bars {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 24px
+        }
+
+        .bar-wrap {
+            width: 140px
+        }
+
+        .bar-lbl {
+            font-size: .65rem;
+            color: #777;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px
+        }
+
+        .bar-bg {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, .08);
+            border-radius: 3px;
+            overflow: hidden
+        }
+
+        .bar-f {
+            height: 100%;
+            border-radius: 3px;
+            transition: width .15s
+        }
+
+        .bar-f.sta {
+            background: linear-gradient(90deg, #cc3300, #ffaa00)
+        }
+
+        .bar-f.bat {
+            background: linear-gradient(90deg, #cc3300, #00aaff)
+        }
+
+        /* === DIALOGUE === */
+        #dialogue {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            background: rgba(0, 0, 0, .88);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            padding: 14px 28px;
+            color: #FFD700;
+            font-size: 1.05rem;
+            max-width: 480px;
+            text-align: center;
+            display: none;
+            animation: dIn .25s ease-out
+        }
+
+        @keyframes dIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(16px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0)
+            }
+        }
+
+        #dialogue.moon-dlg {
+            border-color: #6633cc;
+            color: #aa77ff
+        }
+
+        /* === CROSSHAIR === */
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 22;
+            display: none;
+            width: 18px;
+            height: 18px
+        }
+
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, .45)
+        }
+
+        #crosshair::before {
+            width: 1.5px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%)
+        }
+
+        #crosshair::after {
+            width: 100%;
+            height: 1.5px;
+            top: 50%;
+            transform: translateY(-50%)
+        }
+
+        /* === INTERACT PROMPT === */
+        #interactP {
+            position: fixed;
+            top: 56%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 22;
+            color: #fff;
+            font-size: .85rem;
+            background: rgba(0, 0, 0, .65);
+            padding: 7px 16px;
+            border-radius: 5px;
+            display: none;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255, 255, 255, .15)
+        }
+
+        /* === DANGER === */
+        #dangerInd {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 22;
+            display: none;
+            color: #ff0000;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            animation: dPulse .4s ease-in-out infinite
+        }
+
+        @keyframes dPulse {
+
+            0%,
+            100% {
+                opacity: .4
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        /* === OVERLAYS === */
+        #vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 14;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, .85) 100%);
+            display: none
+        }
+
+        #blackout {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #000;
+            display: none;
+            opacity: 0;
+            transition: opacity .05s
+        }
+
+        #glitchOv {
+            position: fixed;
+            inset: 0;
+            z-index: 15;
+            pointer-events: none;
+            display: none
+        }
+
+        #scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 13;
+            pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, .06) 2px, rgba(0, 0, 0, .06) 4px);
+            display: none
+        }
+
+        /* === JUMPSCARE === */
+        #jumpscare {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000
+        }
+
+        #jumpscare canvas {
+            width: 100vw;
+            height: 100vh
+        }
+
+        /* === WIN/LOSE === */
+        #winScr,
+        #loseScr {
+            position: fixed;
+            inset: 0;
+            z-index: 250;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center
+        }
+
+        #winScr {
+            background: radial-gradient(ellipse at center, #1a1500 0%, #0a0800 100%)
+        }
+
+        #loseScr {
+            background: #000
+        }
+
+        #winScr h2 {
+            font-family: 'Fredoka One', cursive;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: #FFD700;
+            margin-bottom: .8rem
+        }
+
+        #winScr p {
+            color: #998855;
+            font-size: 1.1rem;
+            margin-bottom: 2rem
+        }
+
+        #loseScr h2 {
+            font-family: 'Creepster', cursive;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: #cc0000;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 40px rgba(200, 0, 0, .5)
+        }
+
+        #loseScr p {
+            color: #553333;
+            font-size: 1rem;
+            margin-bottom: 2rem
+        }
+
+        /* === LOCK PROMPT === */
+        #lockP {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+            color: #ccc;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, .85);
+            padding: 20px 36px;
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #333
+        }
+
+        /* === PHASE TEXT === */
+        #phaseText {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 55;
+            font-family: 'Creepster', cursive;
+            font-size: clamp(2rem, 6vw, 4rem);
+            color: #ff0000;
+            display: none;
+            text-shadow: 0 0 40px rgba(255, 0, 0, .6);
+            letter-spacing: 8px
+        }
+
+        /* === SCREEN SHAKE === */
+        .shaking {
+            animation: shk .08s linear infinite
+        }
+
+        @keyframes shk {
+            0% {
+                transform: translate(0)
+            }
+
+            25% {
+                transform: translate(-3px, 2px)
+            }
+
+            50% {
+                transform: translate(3px, -2px)
+            }
+
+            75% {
+                transform: translate(-2px, -3px)
+            }
+
+            100% {
+                transform: translate(2px, 3px)
+            }
+        }
+
+        /* === RULES WARNING === */
+        #rulesWarn {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 23;
+            color: #ff6600;
+            font-size: .8rem;
+            display: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: rwarn .3s ease-in-out infinite alternate
+        }
+
+        @keyframes rwarn {
+            from {
+                opacity: .5;
+                transform: translateX(-50%) scale(1)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) scale(1.03)
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            * {
+                animation: none !important;
+                transition: none !important
+            }
+        }
+    </style>
 </head>
+
 <body>
-<canvas id="game"></canvas>
-<div id="flicker-overlay"></div>
 
-<!-- HUD -->
-<div id="hud">
-  <div class="hud-box" id="gen-counter">GEN: 0/5</div>
-  <div class="hud-box" id="battery-box">
-    <span id="battery-text">100%</span>
-    <div id="battery-bar"><div id="battery-fill" style="width:100%"></div></div>
-  </div>
-</div>
-<div id="stamina-wrap"><div id="stamina-fill" style="width:100%"></div></div>
+    <!-- MAIN MENU -->
+    <div id="mainMenu">
+        <div class="stars" id="menuStars"></div>
+        <h1>SUPERSTAR DAYCARE</h1>
+        <div class="sub">Security Breach</div>
+        <button class="mbtn" id="playBtn">Enter Daycare</button>
+        <div class="ctrl-info">
+            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move &nbsp;|&nbsp;
+            <kbd>Mouse</kbd> Look &nbsp;|&nbsp;
+            <kbd>Shift</kbd> Sprint<br>
+            <kbd>E</kbd> Interact &nbsp;|&nbsp;
+            <kbd>F</kbd> Flashlight &nbsp;|&nbsp;
+            <kbd>C</kbd> Crouch &nbsp;|&nbsp;
+            <kbd>Click</kbd> Lock Cursor
+        </div>
+    </div>
 
-<!-- Controls -->
-<div id="controls">
-  <div id="joystick-zone"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
-  <div id="look-zone"></div>
-  <div id="action-buttons">
-    <div class="act-btn" id="btn-flash">🔦<span class="lbl">LIGHT</span></div>
-    <div class="act-btn" id="btn-sprint">🏃<span class="lbl">RUN</span></div>
-    <div class="act-btn" id="btn-interact">🔧<span class="lbl">USE</span></div>
-  </div>
-</div>
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-gen" id="genContainer"></div>
+        <div class="hud-bars">
+            <div class="bar-wrap">
+                <div class="bar-lbl"><i class="fas fa-running"></i> Stamina</div>
+                <div class="bar-bg">
+                    <div class="bar-f sta" id="staBar" style="width:100%"></div>
+                </div>
+            </div>
+            <div class="bar-wrap">
+                <div class="bar-lbl"><i class="fas fa-bolt"></i> Flashlight</div>
+                <div class="bar-bg">
+                    <div class="bar-f bat" id="batBar" style="width:100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Dialogue -->
-<div id="dialogue-box">
-  <div id="speaker-name"></div>
-  <div id="dialogue-text"></div>
-  <div id="tap-continue">TAP TO CONTINUE</div>
-</div>
+    <div id="dialogue"></div>
+    <div id="crosshair"></div>
+    <div id="interactP"><kbd>E</kbd> Activate Generator</div>
+    <div id="dangerInd"><i class="fas fa-exclamation-triangle"></i> DANGER</div>
+    <div id="rulesWarn"><i class="fas fa-exclamation-circle"></i> Rule Breaker!</div>
+    <div id="vignette"></div>
+    <div id="blackout"></div>
+    <div id="glitchOv"></div>
+    <div id="scanlines"></div>
+    <div id="jumpscare"></div>
+    <div id="phaseText"></div>
+    <div id="lockP">Click to resume</div>
 
-<!-- Start Screen -->
-<div class="screen-overlay" id="start-screen">
-  <div class="title">SUPERSTAR DAYCARE</div>
-  <div class="subtitle">Security Protocol v2.1</div>
-  <button class="menu-btn" id="btn-play">PLAY</button>
-  <button class="menu-btn secondary" id="btn-settings">SETTINGS</button>
-</div>
+    <div id="winScr">
+        <h2>You Are Safe Now</h2>
+        <p>The lights have returned. Sun is happy again.</p><button class="mbtn" onclick="location.reload()">Play
+            Again</button>
+    </div>
+    <div id="loseScr">
+        <h2>Game Over</h2>
+        <p>Moon got you. The daycare claims another.</p><button class="mbtn" onclick="location.reload()">Try
+            Again</button>
+    </div>
 
-<!-- Settings -->
-<div class="screen-overlay" id="settings-screen">
-  <h2>SETTINGS</h2>
-  <div class="setting-row">
-    <label>Brightness <span class="val" id="val-bright">100%</span></label>
-    <input type="range" id="sl-bright" min="50" max="150" value="100">
-  </div>
-  <div class="setting-row">
-    <label>Flashlight Intensity <span class="val" id="val-flash">100%</span></label>
-    <input type="range" id="sl-flash" min="60" max="160" value="100">
-  </div>
-  <div class="setting-row">
-    <label>Joystick Sensitivity <span class="val" id="val-sens">100%</span></label>
-    <input type="range" id="sl-sens" min="50" max="200" value="100">
-  </div>
-  <button class="menu-btn" id="btn-settings-back" style="margin-top:30px">BACK</button>
-</div>
-
-<!-- Transition -->
-<div id="transition"></div>
-
-<!-- Jumpscare -->
-<div id="jumpscare"><canvas id="jumpscare-canvas"></canvas></div>
-
-<!-- Game Over -->
-<div class="screen-overlay" id="game-over-screen">
-  <div class="go-title">GAME OVER</div>
-  <div class="go-sub">The lights went out... permanently.</div>
-  <button class="menu-btn" id="btn-retry">TRY AGAIN</button>
-</div>
-
-<!-- Win Screen -->
-<div class="screen-overlay" id="win-screen">
-  <div class="win-title">YOU SURVIVED</div>
-  <div class="win-sub">The lights are back on. Sun is happy.</div>
-  <button class="menu-btn" id="btn-replay">PLAY AGAIN</button>
-</div>
-
-<script>
-/* ============================================================
-   CONFIGURATION
-   ============================================================ */
-const TILE = 40;
-const MAP_W = 25, MAP_H = 25;
-const PLAYER_R = 10;
-const PLAYER_WALK = 130;
-const PLAYER_SPRINT = 210;
-const BALL_PIT_SLOW = 0.65;
-const MOON_BASE_SPEED = 70;
-const INTERACT_DIST = 55;
-const GEN_TIME = 2.8;
-const MAX_STAMINA = 100;
-const STAMINA_DRAIN = 28;
-const STAMINA_REGEN = 15;
-const BATTERY_MAX = 100;
-const BATTERY_DRAIN = 1.8;
-const DETECT_BASE = 5.5;
-const DETECT_SPRINT_BONUS = 3;
-const DETECT_STILL = 2;
-const EYE_VISIBLE = 14;
-
-/* Map: 0=wall, 1=floor, 2=ballpit, 3=slide, 4=tunnel, 5=generator, 6=stage, 7=hiding */
-const MAP = [
-[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-[0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
-[0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
-[0,1,1,2,2,2,5,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
-[0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0],
-[0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,0],
-[0,0,0,1,0,0,0,1,0,1,7,1,1,1,0,1,1,1,1,0,0,1,0,0,0],
-[0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0],
-[0,1,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0],
-[0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0],
-[0,1,7,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,1,7,1,1,0],
-[0,1,1,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,1,1,1,1,0],
-[0,1,1,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,5,1,1,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0],
-[0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-[0,1,5,4,4,1,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,0],
-[0,1,4,4,4,1,1,1,7,1,1,1,7,1,1,4,4,4,1,1,5,1,1,1,0],
-[0,1,4,4,4,1,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,5,1,1,1,1,1,1,1,1,1,1,1,1,0],
-[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
-[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-];
-
-/* Generator positions (col, row) */
-const GEN_POS = [[6,5],[2,19],[21,15],[21,20],[11,22]];
-/* Moon start tile */
-const MOON_START = {col:10, row:13};
-
-/* ============================================================
-   STATE
-   ============================================================ */
-let state = 'start'; // start, dialogue, transition, night, jumpscare, gameover, win
-let settings = {brightness:1, flashlight:1, sensitivity:1};
-let player = {x:0,y:0,vx:0,vy:0,stamina:MAX_STAMINA,sprinting:false,hiding:false,hidden:false,facing:0};
-let moon = {x:0,y:0,path:[],pathIdx:0,speedMul:0.45,detectRange:DETECT_BASE,hunting:false,patrolTarget:null,lostTimer:0,pathTimer:0};
-let flashlight = {on:true,battery:BATTERY_MAX,flickerTimer:0};
-let generators = {};
-let genCount = 0;
-let cam = {x:0,y:0,lookX:0,lookY:0};
-let input = {jx:0,jy:0,sprint:false,interact:false,flashToggle:false};
-let dialogue = {lines:[],idx:0,charIdx:0,timer:0,done:false,speaker:'',text:''};
-let interactState = {target:null,progress:0,active:false};
-let moonDist = 999;
-let lastTime = 0;
-let dt = 0;
-
-/* ============================================================
-   CANVAS SETUP
-   ============================================================ */
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const darkCanvas = document.createElement('canvas');
-const darkCtx = darkCanvas.getContext('2d');
-const mapCanvas = document.createElement('canvas');
-const mapCtx = mapCanvas.getContext('2d');
-mapCanvas.width = MAP_W * TILE;
-mapCanvas.height = MAP_H * TILE;
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  darkCanvas.width = canvas.width;
-  darkCanvas.height = canvas.height;
-}
-window.addEventListener('resize', resize);
-resize();
-
-/* ============================================================
-   PRE-RENDER MAP
-   ============================================================ */
-function prerenderMap() {
-  const wallColors = ['#FFB5C2','#FFEAA7','#B5EAD7','#C7CEEA','#FFDAC1','#E2F0CB'];
-  const ballColors = ['#FF6B6B','#4ECDC4','#FFE66D','#FF6B9D','#6BCB77','#4D96FF','#FF9FF3','#FFEAA7'];
-  for (let r = 0; r < MAP_H; r++) {
-    for (let c = 0; c < MAP_W; c++) {
-      const x = c * TILE, y = r * TILE, t = MAP[r][c];
-      if (t === 0) {
-        const ci = (c * 7 + r * 13) % wallColors.length;
-        ctx = mapCtx;
-        /* Top half pastel */
-        ctx.fillStyle = wallColors[ci];
-        ctx.fillRect(x, y, TILE, TILE * 0.55);
-        /* Bottom wood */
-        ctx.fillStyle = '#8B6914';
-        ctx.fillRect(x, y + TILE * 0.55, TILE, TILE * 0.45);
-        ctx.fillStyle = '#6B4F12';
-        ctx.fillRect(x, y + TILE * 0.53, TILE, 3);
-        /* Shadow edges */
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x + TILE - 2, y, 2, TILE);
-        ctx.fillRect(x, y + TILE - 2, TILE, 2);
-      } else if (t === 1) {
-        const l = (c + r) % 2 === 0;
-        mapCtx.fillStyle = l ? '#F5E6CA' : '#EDD9B8';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.strokeStyle = 'rgba(0,0,0,0.04)';
-        mapCtx.lineWidth = 0.5;
-        mapCtx.strokeRect(x, y, TILE, TILE);
-      } else if (t === 2) {
-        mapCtx.fillStyle = '#F0E0C0';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        const rng = (c * 31 + r * 17) % 100;
-        for (let i = 0; i < 8; i++) {
-          mapCtx.fillStyle = ballColors[(rng + i * 7) % ballColors.length];
-          const bx = x + 4 + ((rng + i * 13) % (TILE - 8));
-          const by = y + 4 + ((rng + i * 23) % (TILE - 8));
-          mapCtx.beginPath();
-          mapCtx.arc(bx, by, 3 + (i % 3), 0, Math.PI * 2);
-          mapCtx.fill();
-        }
-      } else if (t === 3) {
-        mapCtx.fillStyle = (c + r) % 2 === 0 ? '#F5E6CA' : '#EDD9B8';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.fillStyle = '#E74C3C';
-        mapCtx.beginPath();
-        mapCtx.moveTo(x + 2, y + 2);
-        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.35);
-        mapCtx.lineTo(x + TILE - 2, y + TILE - 2);
-        mapCtx.lineTo(x + 2, y + TILE * 0.65);
-        mapCtx.closePath();
-        mapCtx.fill();
-        mapCtx.fillStyle = '#FF6B6B';
-        mapCtx.beginPath();
-        mapCtx.moveTo(x + 2, y + 2);
-        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.35);
-        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.4);
-        mapCtx.lineTo(x + 2, y + TILE * 0.08);
-        mapCtx.closePath();
-        mapCtx.fill();
-      } else if (t === 4) {
-        mapCtx.fillStyle = '#1E0E3A';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.fillStyle = '#120828';
-        mapCtx.beginPath();
-        mapCtx.ellipse(x + TILE / 2, y + TILE / 2, TILE * 0.38, TILE * 0.32, 0, 0, Math.PI * 2);
-        mapCtx.fill();
-        mapCtx.strokeStyle = '#6B3FA0';
-        mapCtx.lineWidth = 2;
-        mapCtx.stroke();
-      } else if (t === 5) {
-        mapCtx.fillStyle = '#F5E6CA';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.fillStyle = '#444';
-        mapCtx.fillRect(x + 8, y + 8, TILE - 16, TILE - 16);
-        mapCtx.fillStyle = '#555';
-        mapCtx.fillRect(x + 10, y + 10, TILE - 20, TILE - 20);
-        mapCtx.fillStyle = '#FF2222';
-        mapCtx.beginPath();
-        mapCtx.arc(x + TILE / 2, y + 14, 3, 0, Math.PI * 2);
-        mapCtx.fill();
-        mapCtx.fillStyle = '#777';
-        mapCtx.font = 'bold 7px Rajdhani';
-        mapCtx.fillText('GEN', x + 12, y + TILE - 10);
-      } else if (t === 6) {
-        mapCtx.fillStyle = '#C4956A';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.strokeStyle = '#A87D5A';
-        mapCtx.lineWidth = 0.8;
-        for (let i = 0; i < 4; i++) {
-          mapCtx.beginPath();
-          mapCtx.moveTo(x, y + 6 + i * 10);
-          mapCtx.lineTo(x + TILE, y + 8 + i * 10);
-          mapCtx.stroke();
-        }
-        mapCtx.fillStyle = 'rgba(0,0,0,0.08)';
-        mapCtx.fillRect(x, y + TILE - 5, TILE, 5);
-      } else if (t === 7) {
-        mapCtx.fillStyle = '#F5E6CA';
-        mapCtx.fillRect(x, y, TILE, TILE);
-        mapCtx.fillStyle = '#7A5C2E';
-        mapCtx.fillRect(x + 5, y + 10, TILE - 10, TILE - 14);
-        mapCtx.fillStyle = '#9A7A3E';
-        mapCtx.fillRect(x + 3, y + 7, TILE - 6, 6);
-        mapCtx.fillStyle = 'rgba(0,0,0,0.1)';
-        mapCtx.fillRect(x + 5, y + TILE - 6, TILE - 10, 3);
-      }
-    }
+    <script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/"
   }
 }
-prerenderMap();
+</script>
+    <script type="module">
+        import * as THREE from 'three';
 
-/* ============================================================
+        /* =============================================
+           AUDIO SYSTEM — Procedural sound via Web Audio
+           ============================================= */
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let actx;
+        function initAudio() { if (!actx) actx = new AudioCtx(); }
+
+        // Day music: bouncy major-key melody
+        let dayMusicNodes = [];
+        function startDayMusic() {
+            if (!actx) return;
+            const notes = [523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 440, 523.25, 587.33, 659.25, 783.99, 880, 783.99, 659.25, 587.33];
+            const gain = actx.createGain(); gain.gain.value = 0.06; gain.connect(actx.destination);
+            const now = actx.currentTime;
+            notes.forEach((f, i) => {
+                const osc = actx.createOscillator();
+                osc.type = 'triangle'; osc.frequency.value = f;
+                const eg = actx.createGain();
+                eg.gain.setValueAtTime(0, now + i * 0.25);
+                eg.gain.linearRampToValueAtTime(0.3, now + i * 0.25 + 0.05);
+                eg.gain.linearRampToValueAtTime(0, now + i * 0.25 + 0.22);
+                osc.connect(eg); eg.connect(gain);
+                osc.start(now + i * 0.25); osc.stop(now + i * 0.25 + 0.25);
+                dayMusicNodes.push(osc);
+            });
+            // Loop
+            const loopLen = notes.length * 0.25;
+            dayMusicLoop = setTimeout(() => { if (gameState === 'DAY') startDayMusic(); }, loopLen * 1000 - 100);
+        }
+        let dayMusicLoop;
+        function stopDayMusic() { clearTimeout(dayMusicLoop); dayMusicNodes.forEach(n => { try { n.stop(); } catch (e) { } }); dayMusicNodes = []; }
+
+        // Night ambience: deep drone
+        let nightDrone, nightNoise;
+        function startNightAmbience() {
+            if (!actx) return;
+            // Low drone
+            nightDrone = actx.createOscillator(); nightDrone.type = 'sine'; nightDrone.frequency.value = 55;
+            const dg = actx.createGain(); dg.gain.value = 0.12;
+            nightDrone.connect(dg); dg.connect(actx.destination); nightDrone.start();
+            // Wind noise
+            const bufSize = actx.sampleRate * 2;
+            const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+            nightNoise = actx.createBufferSource(); nightNoise.buffer = buf; nightNoise.loop = true;
+            const nf = actx.createBiquadFilter(); nf.type = 'lowpass'; nf.frequency.value = 200;
+            const ng = actx.createGain(); ng.gain.value = 0.08;
+            nightNoise.connect(nf); nf.connect(ng); ng.connect(actx.destination); nightNoise.start();
+        }
+        function stopNightAmbience() { try { nightDrone?.stop(); } catch (e) { } try { nightNoise?.stop(); } catch (e) { } }
+
+        // Metal scraping for Moon
+        function playScrape() {
+            if (!actx) return;
+            const bufSize = actx.sampleRate * 0.4;
+            const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1);
+            const src = actx.createBufferSource(); src.buffer = buf;
+            const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 800 + Math.random() * 400; bp.Q.value = 5;
+            const g = actx.createGain(); g.gain.setValueAtTime(0.15, actx.currentTime); g.gain.linearRampToValueAtTime(0, actx.currentTime + 0.4);
+            src.connect(bp); bp.connect(g); g.connect(actx.destination); src.start();
+        }
+
+        // Jumpscare sound
+        function playJumpscareSnd() {
+            if (!actx) return;
+            const g = actx.createGain(); g.gain.value = 0.5; g.connect(actx.destination);
+            [120, 180, 240, 300, 360].forEach(f => {
+                const o = actx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+                o.connect(g); o.start(); o.stop(actx.currentTime + 0.6);
+            });
+            const bufSize = actx.sampleRate; const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+            const d = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1);
+            const ns = actx.createBufferSource(); ns.buffer = buf;
+            const ng = actx.createGain(); ng.gain.value = 0.4; ng.connect(actx.destination);
+            ns.connect(ng); ns.start();
+        }
+
+        // Generator activate sound
+        function playGenSnd() {
+            if (!actx) return;
+            const o = actx.createOscillator(); o.type = 'sine';
+            o.frequency.setValueAtTime(200, actx.currentTime);
+            o.frequency.linearRampToValueAtTime(800, actx.currentTime + 0.3);
+            const g = actx.createGain(); g.gain.setValueAtTime(0.15, actx.currentTime); g.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5);
+            o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.5);
+        }
+
+        // Footstep
+        function playStep() {
+            if (!actx) return;
+            const bufSize = actx.sampleRate * 0.06; const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+            const d = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1);
+            const s = actx.createBufferSource(); s.buffer = buf;
+            const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 600;
+            const g = actx.createGain(); g.gain.value = 0.04;
+            s.connect(f); f.connect(g); g.connect(actx.destination); s.start();
+        }
+
+        // Whisper
+        function playWhisper() {
+            if (!actx) return;
+            const bufSize = actx.sampleRate * 0.8; const buf = actx.createBuffer(1, bufSize, actx.sampleRate);
+            const d = buf.getChannelData(0); for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.3;
+            const s = actx.createBufferSource(); s.buffer = buf;
+            const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 2;
+            const g = actx.createGain(); g.gain.setValueAtTime(0, actx.currentTime); g.gain.linearRampToValueAtTime(0.06, actx.currentTime + 0.2); g.gain.linearRampToValueAtTime(0, actx.currentTime + 0.7);
+            s.connect(f); f.connect(g); g.connect(actx.destination); s.start();
+        }
+
+        /* =============================================
+           GAME STATE
+           ============================================= */
+        const GS = { MENU: 'MENU', DAY: 'DAY', TRANSITION: 'TRANSITION', NIGHT: 'NIGHT', WIN: 'WIN', LOSE: 'LOSE', JUMPSCARE: 'JUMPSCARE' };
+        let gameState = GS.MENU;
+        let gensActivated = 0;
+        const TOTAL_GENS = 5;
+        let stamina = 100, battery = 100;
+        let isCrouching = false, isSprinting = false, flashlightOn = false;
+        let playerY = 1.6; // eye height
+        let yaw = 0, pitch = 0;
+        let isLocked = false;
+        let dayTimer = 0;
+        const DAY_DURATION = 35; // seconds before transition
+        let ruleBreakerCount = 0;
+        let transitionTimer = 0;
+        let moonSpeed = 2.5;
+        let moonChasing = false;
+        let playerNoise = 0;
+        let stepTimer = 0;
+        let genCooldown = 0;
+        let moonScrapeTimer = 0;
+        let whisperTimer = 0;
+        let flickerTimer = 0;
+        let moonDisappearTimer = 0;
+        let moonVisible = true;
+
+        /* =============================================
+           THREE.JS SCENE SETUP
+           ============================================= */
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
+        scene.fog = new THREE.Fog(0x111111, 1, 35);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.rotation.order = 'YXZ';
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.body.prepend(renderer.domElement);
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        /* =============================================
+           ENVIRONMENT — Daycare Map
+           ============================================= */
+        const ROOM_W = 44, ROOM_D = 44, ROOM_H = 8;
+        const WALL_COLOR_DAY = [
+            0xFF6B6B, 0x4ECDC4, 0xFFD93D, 0xFF8C42,
+            0xA8E6CF, 0xFF77A9, 0x6C5CE7, 0xFDCB6E
+        ];
+        let wallMeshes = [], floorMesh, ceilMesh;
+        let dayLights = [], nightLights = [];
+        let generatorObjects = [];
+        let ballPitMesh;
+        let sunChar, moonChar;
+        let flashlightObj, flashlightTarget;
+
+        // Wall definition helper
+        function addWall(x, z, w, d, h, colorIdx, castShadow = true) {
+            const geo = new THREE.BoxGeometry(Math.max(0.01, w), Math.max(0.01, h), Math.max(0.01, d));
+            const ci = colorIdx !== undefined ? colorIdx : Math.floor(Math.random() * WALL_COLOR_DAY.length);
+            const mat = new THREE.MeshStandardMaterial({ color: WALL_COLOR_DAY[ci], roughness: 0.7, metalness: 0.05 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, h / 2, z);
+            mesh.castShadow = castShadow;
+            mesh.receiveShadow = true;
+            mesh.userData = { isWall: true, wx: x, wz: z, ww: w, wd: d };
+            scene.add(mesh);
+            wallMeshes.push(mesh);
+            return mesh;
+        }
+
+        // Floor
+        function buildFloor() {
+            // Colorful tile floor
+            const geo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const tileSize = 32;
+            const tileColors = ['#FFE66D', '#FF6B6B', '#4ECDC4', '#A8E6CF', '#FF8C42', '#FF77A9', '#FDCB6E', '#DDA0DD'];
+            for (let tx = 0; tx < 512 / tileSize; tx++) {
+                for (let ty = 0; ty < 512 / tileSize; ty++) {
+                    ctx.fillStyle = tileColors[(tx + ty * 3) % tileColors.length];
+                    ctx.fillRect(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                    ctx.strokeRect(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(4, 4);
+            const mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 });
+            floorMesh = new THREE.Mesh(geo, mat);
+            floorMesh.rotation.x = -Math.PI / 2;
+            floorMesh.position.set(ROOM_W / 2, 0, ROOM_D / 2);
+            floorMesh.receiveShadow = true;
+            scene.add(floorMesh);
+        }
+
+        // Ceiling
+        function buildCeiling() {
+            const geo = new THREE.PlaneGeometry(ROOM_W, ROOM_D);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x2a1a3a, roughness: 0.9 });
+            ceilMesh = new THREE.Mesh(geo, mat);
+            ceilMesh.rotation.x = Math.PI / 2;
+            ceilMesh.position.set(ROOM_W / 2, ROOM_H, ROOM_D / 2);
+            scene.add(ceilMesh);
+        }
+
+        // Ball pit
+        function buildBallPit() {
+            const cx = 22, cz = 22, pw = 10, pd = 10, pitH = 1.2;
+            // Pit walls (low)
+            addWall(cx - pw / 2, cz, 0.3, pd, pitH, 2);
+            addWall(cx + pw / 2, cz, 0.3, pd, pitH, 2);
+            addWall(cx, cz - pd / 2, pw, 0.3, pitH, 2);
+            addWall(cx, cz + pd / 2, pw, 0.3, pitH, 2);
+            // Balls (instanced)
+            const ballGeo = new THREE.SphereGeometry(0.15, 6, 6);
+            const ballColors = [0xFF0000, 0x00FF00, 0x0000FF, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFF8800, 0xFFFFFF];
+            const ballMats = ballColors.map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.3 }));
+            const count = 600;
+            const meshes = [];
+            ballMats.forEach(mat => {
+                const im = new THREE.InstancedMesh(ballGeo, mat, Math.floor(count / ballMats.length));
+                const dummy = new THREE.Object3D();
+                const perMat = Math.floor(count / ballMats.length);
+                for (let i = 0; i < perMat; i++) {
+                    dummy.position.set(
+                        cx - pw / 2 + 0.5 + Math.random() * (pw - 1),
+                        0.15 + Math.random() * 0.8,
+                        cz - pd / 2 + 0.5 + Math.random() * (pd - 1)
+                    );
+                    dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                    dummy.updateMatrix();
+                    im.setMatrixAt(i, dummy.matrix);
+                }
+                im.instanceMatrix.needsUpdate = true;
+                scene.add(im);
+                meshes.push(im);
+            });
+            ballPitMesh = meshes;
+        }
+
+        // Slide structure (NW corner)
+        function buildSlide() {
+            // Tall tower
+            addWall(6, 6, 6, 0.4, 6, 0);
+            addWall(6, 2, 0.4, 4, 6, 0);
+            addWall(3, 4, 0.4, 4, 6, 1);
+            addWall(9, 4, 0.4, 4, 6, 1);
+            // Slide surface (angled)
+            const slideGeo = new THREE.PlaneGeometry(2.5, 8);
+            const slideMat = new THREE.MeshStandardMaterial({ color: 0xFF4444, roughness: 0.2, metalness: 0.3, side: THREE.DoubleSide });
+            const slide = new THREE.Mesh(slideGeo, slideMat);
+            slide.position.set(9.5, 3, 7);
+            slide.rotation.z = -0.7;
+            slide.rotation.y = Math.PI / 2;
+            scene.add(slide);
+            // Slide sides
+            const sideGeo = new THREE.PlaneGeometry(0.3, 8);
+            const sideMat = new THREE.MeshStandardMaterial({ color: 0xCC2222, side: THREE.DoubleSide });
+            [-1.25, 1.25].forEach(off => {
+                const s = new THREE.Mesh(sideGeo, sideMat);
+                s.position.set(9.5 + off * Math.cos(0.7), 3 + off * Math.sin(0.7) * 0.5, 7);
+                s.rotation.z = -0.7; s.rotation.y = Math.PI / 2;
+                scene.add(s);
+            });
+        }
+
+        // Climbing structure (SW corner)
+        function buildClimbing() {
+            // Platforms at different heights
+            addWall(8, 36, 5, 0.3, 0.3, 3); // platform base
+            addWall(8, 33, 4, 0.3, 3.5, 3);  // wall behind
+            addWall(5.5, 34.5, 0.3, 3, 3.5, 1);
+            // Net (lines)
+            const netMat = new THREE.LineBasicMaterial({ color: 0x44AA44 });
+            for (let i = 0; i < 6; i++) {
+                const pts = [new THREE.Vector3(6 + i * 0.8, 0, 34), new THREE.Vector3(6 + i * 0.8, 3.5, 36)];
+                const g = new THREE.BufferGeometry().setFromPoints(pts);
+                scene.add(new THREE.Line(g, netMat));
+            }
+            for (let j = 0; j < 5; j++) {
+                const pts = [new THREE.Vector3(6, j * 0.7 + 0.3, 34 + j * 0.5), new THREE.Vector3(10, j * 0.7 + 0.3, 34 + j * 0.5)];
+                const g = new THREE.BufferGeometry().setFromPoints(pts);
+                scene.add(new THREE.Line(g, netMat));
+            }
+            // Ramp up
+            const rampGeo = new THREE.BoxGeometry(3, 0.2, 4);
+            const rampMat = new THREE.MeshStandardMaterial({ color: 0x4ECDC4, roughness: 0.5 });
+            const ramp = new THREE.Mesh(rampGeo, rampMat);
+            ramp.position.set(8, 1, 37.5);
+            ramp.rotation.x = -0.5;
+            ramp.receiveShadow = true;
+            scene.add(ramp);
+            // Upper platform
+            addWall(8, 36, 5, 0.3, 0.3, 3); // reuse as upper
+        }
+
+        // Tunnel maze (E side)
+        function buildTunnels() {
+            // Long tunnel
+            addWall(38, 14, 0.3, 10, 1.5, 4);
+            addWall(42, 14, 0.3, 10, 1.5, 4);
+            addWall(40, 9, 4, 0.3, 1.5, 5);
+            addWall(40, 19, 4, 0.3, 1.5, 5);
+            // Branch tunnel
+            addWall(36, 22, 8, 0.3, 1.5, 6);
+            addWall(36, 26, 8, 0.3, 1.5, 6);
+            addWall(32, 24, 0.3, 4, 1.5, 7);
+            // Cross tunnel
+            addWall(34, 30, 0.3, 6, 1.5, 0);
+            addWall(38, 30, 0.3, 6, 1.5, 0);
+        }
+
+        // Upper walkway (N side, elevated)
+        function buildUpperWalkway() {
+            // Support columns
+            [18, 26, 34].forEach(x => {
+                addWall(x, 3, 0.5, 0.5, 5, 3);
+            });
+            // Platform
+            const platGeo = new THREE.BoxGeometry(20, 0.3, 3);
+            const platMat = new THREE.MeshStandardMaterial({ color: 0xFDCB6E, roughness: 0.5 });
+            const plat = new THREE.Mesh(platGeo, platMat);
+            plat.position.set(26, 4, 3);
+            plat.receiveShadow = true;
+            scene.add(plat);
+            // Railing
+            addWall(16.5, 1.5, 0.2, 3, 1, 5);
+            addWall(35.5, 1.5, 0.2, 3, 1, 5);
+            addWall(26, 1.5, 19, 0.2, 1, 5);
+            // Ramp to upper
+            const rampGeo = new THREE.BoxGeometry(3, 0.2, 6);
+            const rampMat = new THREE.MeshStandardMaterial({ color: 0x6C5CE7, roughness: 0.5 });
+            const ramp = new THREE.Mesh(rampGeo, rampMat);
+            ramp.position.set(16, 2, 6);
+            ramp.rotation.x = -0.55;
+            ramp.receiveShadow = true;
+            scene.add(ramp);
+        }
+
+        // Internal corridor walls
+        function buildCorridors() {
+            // Central dividing walls creating maze paths
+            addWall(14, 10, 6, 0.4, ROOM_H, 7);
+            addWall(30, 10, 6, 0.4, ROOM_H, 0);
+            addWall(14, 30, 0.4, 6, ROOM_H, 1);
+            addWall(30, 30, 0.4, 6, ROOM_H, 4);
+            addWall(22, 28, 0.4, 4, ROOM_H, 5);
+            addWall(22, 14, 4, 0.4, ROOM_H, 6);
+            addWall(10, 20, 4, 0.4, ROOM_H, 3);
+            addWall(34, 20, 4, 0.4, ROOM_H, 2);
+            // Small hiding nooks
+            addWall(2, 28, 3, 0.4, ROOM_H, 7);
+            addWall(2, 12, 3, 0.4, ROOM_H, 0);
+            addWall(42, 36, 3, 0.4, ROOM_H, 1);
+        }
+
+        // Decorative elements
+        function buildDecorations() {
+            // Hanging stars from ceiling
+            const starGeo = new THREE.OctahedronGeometry(0.3, 0);
+            const starMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, emissive: 0xFFD700, emissiveIntensity: 0.3 });
+            for (let i = 0; i < 20; i++) {
+                const s = new THREE.Mesh(starGeo, starMat);
+                s.position.set(4 + Math.random() * 36, ROOM_H - 0.5 - Math.random() * 2, 4 + Math.random() * 36);
+                s.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                scene.add(s);
+                // String
+                const pts = [s.position.clone(), new THREE.Vector3(s.position.x, ROOM_H, s.position.z)];
+                const g = new THREE.BufferGeometry().setFromPoints(pts);
+                scene.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0x888888 })));
+            }
+            // Alphabet blocks
+            const blockGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const blockColors = [0xFF4444, 0x44FF44, 0x4444FF, 0xFFFF44];
+            for (let i = 0; i < 15; i++) {
+                const mat = new THREE.MeshStandardMaterial({ color: blockColors[i % 4], roughness: 0.8 });
+                const b = new THREE.Mesh(blockGeo, mat);
+                b.position.set(2 + Math.random() * 40, 0.25, 2 + Math.random() * 40);
+                b.rotation.y = Math.random() * Math.PI;
+                b.castShadow = true;
+                scene.add(b);
+            }
+            // Banners
+            const bannerColors = [0xFF6B6B, 0xFFD93D, 0x4ECDC4, 0xFF8C42];
+            for (let i = 0; i < 8; i++) {
+                const bGeo = new THREE.PlaneGeometry(1.5, 2.5);
+                const bMat = new THREE.MeshStandardMaterial({ color: bannerColors[i % 4], side: THREE.DoubleSide, roughness: 0.9 });
+                const b = new THREE.Mesh(bGeo, bMat);
+                const side = i < 4 ? 0.3 : ROOM_W - 0.3;
+                const zz = 5 + (i % 4) * 10;
+                b.position.set(side, ROOM_H - 1.5, zz);
+                if (i >= 4) b.rotation.y = Math.PI;
+                scene.add(b);
+            }
+        }
+
+        // Build everything
+        function buildEnvironment() {
+            // Outer walls
+            addWall(ROOM_W / 2, -0.25, ROOM_W + 1, 0.5, ROOM_H, 0);
+            addWall(ROOM_W / 2, ROOM_D + 0.25, ROOM_W + 1, 0.5, ROOM_H, 0);
+            addWall(-0.25, ROOM_D / 2, 0.5, ROOM_D + 1, ROOM_H, 1);
+            addWall(ROOM_W + 0.25, ROOM_D / 2, 0.5, ROOM_D + 1, ROOM_H, 1);
+
+            buildFloor();
+            buildCeiling();
+            buildBallPit();
+            buildSlide();
+            buildClimbing();
+            buildTunnels();
+            buildUpperWalkway();
+            buildCorridors();
+            buildDecorations();
+        }
+
+        /* =============================================
+           LIGHTING
+           ============================================= */
+        let ambientLight, sunLight;
+
+        function setupDayLighting() {
+            ambientLight = new THREE.AmbientLight(0xfff5e0, 0.6);
+            scene.add(ambientLight);
+            dayLights.push(ambientLight);
+
+            sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            sunLight.position.set(20, ROOM_H - 1, 20);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.set(1024, 1024);
+            sunLight.shadow.camera.left = -25; sunLight.shadow.camera.right = 25;
+            sunLight.shadow.camera.top = 25; sunLight.shadow.camera.bottom = -25;
+            scene.add(sunLight);
+            dayLights.push(sunLight);
+
+            // Colorful point lights
+            const plColors = [0xFF6B6B, 0x4ECDC4, 0xFFD93D, 0xFF8C42, 0xA8E6CF, 0xFF77A9];
+            const plPositions = [[10, 5, 10], [34, 5, 10], [10, 5, 34], [34, 5, 34], [22, 5, 22], [22, 3, 10]];
+            plPositions.forEach((p, i) => {
+                const pl = new THREE.PointLight(plColors[i], 0.8, 15);
+                pl.position.set(p[0], p[1], p[2]);
+                scene.add(pl);
+                dayLights.push(pl);
+            });
+        }
+
+        function setupNightLighting() {
+            // Remove day lights
+            dayLights.forEach(l => { l.intensity = 0; });
+            ambientLight.intensity = 0.02;
+            ambientLight.color.set(0x111133);
+            scene.fog.color.set(0x000005);
+            scene.fog.near = 0.5; scene.fog.far = 18;
+            scene.background.set(0x000005);
+
+            // Flashlight (spotlight attached to camera)
+            flashlightObj = new THREE.SpotLight(0xffffee, 3, 20, Math.PI / 5, 0.4, 1.5);
+            flashlightObj.castShadow = true;
+            flashlightObj.shadow.mapSize.set(512, 512);
+            camera.add(flashlightObj);
+            flashlightObj.position.set(0, 0, 0);
+            flashlightTarget = new THREE.Object3D();
+            flashlightTarget.position.set(0, 0, -1);
+            camera.add(flashlightTarget);
+            flashlightObj.target = flashlightTarget;
+            flashlightObj.visible = false;
+            scene.add(camera);
+        }
+
+        /* =============================================
+           GENERATORS
+           ============================================= */
+        const GEN_POSITIONS = [
+            { x: 6, z: 8, label: 'Generator 1 - Slide Tower' },    // NW, slide area
+            { x: 40, z: 14, label: 'Generator 2 - Tunnel Maze' },   // E, tunnel
+            { x: 8, z: 34, label: 'Generator 3 - Climbing Area' },   // SW, climbing
+            { x: 38, z: 38, label: 'Generator 4 - SE Corner' },      // SE corner
+            { x: 26, z: 3, label: 'Generator 5 - Upper Walkway', y: 4.3 } // Upper walkway
+        ];
+
+        function buildGenerators() {
+            GEN_POSITIONS.forEach((gp, i) => {
+                const y = gp.y || 1;
+                // Base
+                const baseGeo = new THREE.BoxGeometry(0.8, 1.2, 0.8);
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.5 });
+                const base = new THREE.Mesh(baseGeo, baseMat);
+                base.position.set(gp.x, y, gp.z);
+                base.castShadow = true;
+                scene.add(base);
+                // Light on top
+                const lightGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                const lightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.5 });
+                const lightMesh = new THREE.Mesh(lightGeo, lightMat);
+                lightMesh.position.set(gp.x, y + 0.8, gp.z);
+                scene.add(lightMesh);
+                // Point light
+                const pl = new THREE.PointLight(0xff3300, 0.5, 5);
+                pl.position.set(gp.x, y + 1, gp.z);
+                scene.add(pl);
+                generatorObjects.push({ base, lightMesh, pointLight: pl, activated: false, pos: gp, index: i });
+            });
+        }
+
+        /* =============================================
+           CHARACTERS — Sun & Moon
+           ============================================= */
+        function createSun() {
+            const group = new THREE.Group();
+            // Body
+            const bodyGeo = new THREE.CylinderGeometry(0.4, 0.5, 1.2, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0xFFDD00, roughness: 0.6 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.6;
+            group.add(body);
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.5, 12, 12);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xFFEE33, roughness: 0.5 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.6;
+            group.add(head);
+            // Rays
+            for (let i = 0; i < 10; i++) {
+                const rayGeo = new THREE.ConeGeometry(0.1, 0.4, 4);
+                const rayMat = new THREE.MeshStandardMaterial({ color: 0xFFAA00, emissive: 0xFFAA00, emissiveIntensity: 0.3 });
+                const ray = new THREE.Mesh(rayGeo, rayMat);
+                const a = (i / 10) * Math.PI * 2;
+                ray.position.set(Math.cos(a) * 0.65, 1.6, Math.sin(a) * 0.65);
+                ray.lookAt(new THREE.Vector3(Math.cos(a) * 2, 1.6, Math.sin(a) * 2));
+                group.add(ray);
+            }
+            // Eyes
+            const eyeGeo = new THREE.SphereGeometry(0.08, 6, 6);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            [-0.15, 0.15].forEach(x => {
+                const eye = new THREE.Mesh(eyeGeo, eyeMat);
+                eye.position.set(x, 1.7, 0.42);
+                group.add(eye);
+            });
+            // Smile
+            const smileGeo = new THREE.TorusGeometry(0.15, 0.03, 4, 8, Math.PI);
+            const smileMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const smile = new THREE.Mesh(smileGeo, smileMat);
+            smile.position.set(0, 1.5, 0.42);
+            smile.rotation.x = 0.2;
+            group.add(smile);
+            // Arms
+            const armGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.8, 6);
+            const armMat = new THREE.MeshStandardMaterial({ color: 0xFFDD00 });
+            [-0.65, 0.65].forEach(x => {
+                const arm = new THREE.Mesh(armGeo, armMat);
+                arm.position.set(x, 0.8, 0);
+                arm.rotation.z = x < 0 ? 0.3 : -0.3;
+                group.add(arm);
+            });
+            // Legs
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6);
+            [-0.2, 0.2].forEach(x => {
+                const leg = new THREE.Mesh(legGeo, armMat);
+                leg.position.set(x, -0.1, 0);
+                group.add(leg);
+            });
+
+            group.position.set(22, 0, 18);
+            group.userData = { targetPos: new THREE.Vector3(22, 0, 18), moveTimer: 0, dialogueTimer: 0 };
+            scene.add(group);
+            return group;
+        }
+
+        function createMoon() {
+            const group = new THREE.Group();
+            // Body (thinner, hunched)
+            const bodyGeo = new THREE.CylinderGeometry(0.3, 0.4, 1.4, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a4a, roughness: 0.8 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.7;
+            body.rotation.x = 0.3;
+            group.add(body);
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.45, 12, 12);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0x222255, roughness: 0.7 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.65;
+            group.add(head);
+            // Crescent moon detail on head
+            const crescentGeo = new THREE.TorusGeometry(0.35, 0.08, 4, 12, Math.PI * 1.3);
+            const crescentMat = new THREE.MeshStandardMaterial({ color: 0x4444aa, emissive: 0x2222aa, emissiveIntensity: 0.2 });
+            const crescent = new THREE.Mesh(crescentGeo, crescentMat);
+            crescent.position.set(0, 1.9, 0.2);
+            group.add(crescent);
+            // Glowing eyes
+            const eyeGeo = new THREE.SphereGeometry(0.07, 6, 6);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff0000, emissiveIntensity: 2 });
+            [-0.13, 0.13].forEach(x => {
+                const eye = new THREE.Mesh(eyeGeo, eyeMat);
+                eye.position.set(x, 1.72, 0.38);
+                group.add(eye);
+            });
+            // Eye glow light
+            const eyeLight = new THREE.PointLight(0xff0000, 1, 5);
+            eyeLight.position.set(0, 1.72, 0.5);
+            group.add(eyeLight);
+            // Long arms
+            const armGeo = new THREE.CylinderGeometry(0.06, 0.04, 1.4, 6);
+            const armMat = new THREE.MeshStandardMaterial({ color: 0x1a1a4a });
+            [-0.55, 0.55].forEach(x => {
+                const arm = new THREE.Mesh(armGeo, armMat);
+                arm.position.set(x, 0.5, 0.1);
+                arm.rotation.z = x < 0 ? 0.5 : -0.5;
+                arm.rotation.x = 0.3;
+                group.add(arm);
+            });
+            // Legs (bent)
+            const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.7, 6);
+            [-0.18, 0.18].forEach(x => {
+                const leg = new THREE.Mesh(legGeo, armMat);
+                leg.position.set(x, 0, 0.1);
+                leg.rotation.x = -0.4;
+                group.add(leg);
+            });
+
+            group.position.set(35, 0, 35);
+            group.visible = false;
+            scene.add(group);
+            return group;
+        }
+
+        /* =============================================
+           COLLISION DETECTION
+           ============================================= */
+        const PLAYER_RADIUS = 0.4;
+
+        function checkWallCollision(px, pz) {
+            for (const w of wallMeshes) {
+                const ud = w.userData;
+                if (!ud.isWall) continue;
+                const hw = ud.ww / 2, hd = ud.wd / 2;
+                const closestX = Math.max(ud.wx - hw, Math.min(px, ud.wx + hw));
+                const closestZ = Math.max(ud.wz - hd, Math.min(pz, ud.wz + hd));
+                const dx = px - closestX, dz = pz - closestZ;
+                if (dx * dx + dz * dz < PLAYER_RADIUS * PLAYER_RADIUS) return true;
+            }
+            // Room bounds
+            if (px < PLAYER_RADIUS || px > ROOM_W - PLAYER_RADIUS || pz < PLAYER_RADIUS || pz > ROOM_D - PLAYER_RADIUS) return true;
+            return false;
+        }
+
+        /* =============================================
+           PLAYER CONTROLLER
+           ============================================= */
+        const keys = { w: false, a: false, s: false, d: false, shift: false, c: false };
+        let playerPos = new THREE.Vector3(5, 0, 40); // Start south
+
+        document.addEventListener('keydown', e => {
+            const k = e.key.toLowerCase();
+            if (k === 'w') keys.w = true;
+            if (k === 'a') keys.a = true;
+            if (k === 's') keys.s = true;
+            if (k === 'd') keys.d = true;
+            if (k === 'shift') keys.shift = true;
+            if (k === 'c') keys.c = !keys.c;
+            if (k === 'f' && gameState === GS.NIGHT) { flashlightOn = !flashlightOn; if (flashlightObj) flashlightObj.visible = flashlightOn; }
+            if (k === 'e') tryInteract();
+        });
+        document.addEventListener('keyup', e => {
+            const k = e.key.toLowerCase();
+            if (k === 'w') keys.w = false;
+            if (k === 'a') keys.a = false;
+            if (k === 's') keys.s = false;
+            if (k === 'd') keys.d = false;
+            if (k === 'shift') keys.shift = false;
+        });
+
+        // Pointer lock
+        renderer.domElement.addEventListener('click', () => {
+            if (gameState === GS.DAY || gameState === GS.NIGHT) {
+                renderer.domElement.requestPointerLock();
+            }
+        });
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === renderer.domElement;
+            document.getElementById('lockP').style.display = isLocked ? 'none' : (gameState === GS.DAY || gameState === GS.NIGHT ? 'block' : 'none');
+        });
+        document.addEventListener('mousemove', e => {
+            if (!isLocked) return;
+            yaw -= e.movementX * 0.002;
+            pitch -= e.movementY * 0.002;
+            pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+        });
+
+        function updatePlayer(dt) {
+            if (gameState !== GS.DAY && gameState !== GS.NIGHT) return;
+
+            isSprinting = keys.shift && stamina > 0 && !isCrouching;
+            isCrouching = keys.c;
+            const targetY = isCrouching ? 0.9 : 1.6;
+            playerY += (targetY - playerY) * 8 * dt;
+
+            const speed = isSprinting ? 7 : (isCrouching ? 2.5 : 4.5);
+            const dir = new THREE.Vector3();
+            if (keys.w) dir.z -= 1;
+            if (keys.s) dir.z += 1;
+            if (keys.a) dir.x -= 1;
+            if (keys.d) dir.x += 1;
+
+            const moving = dir.length() > 0;
+            if (moving) dir.normalize();
+            dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+            // Apply movement with collision
+            const newX = playerPos.x + dir.x * speed * dt;
+            const newZ = playerPos.z + dir.z * speed * dt;
+
+            if (!checkWallCollision(newX, playerPos.z)) playerPos.x = newX;
+            if (!checkWallCollision(playerPos.x, newZ)) playerPos.z = newZ;
+
+            // Upper walkway height check
+            let onUpper = false;
+            if (playerPos.x > 16 && playerPos.x < 36 && playerPos.z > 1.5 && playerPos.z < 4.5) {
+                onUpper = true;
+                playerPos.y += (4 - playerPos.y) * 8 * dt;
+            } else if (playerPos.y > 0.5) {
+                playerPos.y += (0 - playerPos.y) * 5 * dt;
+            }
+
+            camera.position.set(playerPos.x, playerPos.y + playerY, playerPos.z);
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+
+            // Stamina
+            if (isSprinting && moving) {
+                stamina = Math.max(0, stamina - 20 * dt);
+                if (stamina <= 0) isSprinting = false;
+            } else {
+                stamina = Math.min(100, stamina + (isCrouching ? 25 : 15) * dt);
+            }
+
+            // Battery
+            if (flashlightOn) {
+                battery = Math.max(0, battery - 5 * dt);
+                if (battery <= 0) { flashlightOn = false; if (flashlightObj) flashlightObj.visible = false; }
+            }
+
+            // Player noise level
+            if (moving) {
+                playerNoise = isSprinting ? 1.0 : (isCrouching ? 0.1 : 0.4);
+            } else {
+                playerNoise = Math.max(0, playerNoise - 2 * dt);
+            }
+
+            // Footstep sounds
+            if (moving) {
+                stepTimer -= dt;
+                if (stepTimer <= 0) {
+                    playStep();
+                    stepTimer = isSprinting ? 0.28 : (isCrouching ? 0.6 : 0.4);
+                }
+            }
+
+            // Rule breaker in day mode
+            if (gameState === GS.DAY) {
+                if (isSprinting && moving) {
+                    ruleBreakerCount += dt;
+                    document.getElementById('rulesWarn').style.display = ruleBreakerCount > 0.5 ? 'block' : 'none';
+                } else {
+                    ruleBreakerCount = Math.max(0, ruleBreakerCount - dt);
+                    document.getElementById('rulesWarn').style.display = ruleBreakerCount > 0.5 ? 'block' : 'none';
+                }
+            }
+        }
+
+        /* =============================================
+           INTERACTION
+           ============================================= */
+        function tryInteract() {
+            if (gameState !== GS.NIGHT || genCooldown > 0) return;
+            const lookDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            for (const gen of generatorObjects) {
+                if (gen.activated) continue;
+                const gp = gen.pos;
+                const genWorldPos = new THREE.Vector3(gp.x, gp.y || 1, gp.z);
+                const toGen = genWorldPos.clone().sub(camera.position);
+                const dist = toGen.length();
+                if (dist < 3) {
+                    // Activate
+                    gen.activated = true;
+                    gensActivated++;
+                    genCooldown = 1.5;
+                    playGenSnd();
+                    // Visual feedback
+                    gen.lightMesh.material.color.set(0x00ff88);
+                    gen.lightMesh.material.emissive.set(0x00ff88);
+                    gen.pointLight.color.set(0x00ff88);
+                    gen.pointLight.intensity = 2;
+                    gen.base.material.emissive = new THREE.Color(0x003311);
+                    // Increase Moon speed
+                    moonSpeed += 0.8;
+                    // Update HUD
+                    updateGenHUD();
+                    showDialogue(`Generator ${gensActivated}/${TOTAL_GENS} activated...`, false);
+                    if (gensActivated >= TOTAL_GENS) {
+                        setTimeout(() => winGame(), 1500);
+                    }
+                    return;
+                }
+            }
+        }
+
+        function updateGenHUD() {
+            const container = document.getElementById('genContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < TOTAL_GENS; i++) {
+                const d = document.createElement('div');
+                d.className = 'gen-dot' + (i < gensActivated ? ' on' : ' inactive');
+                d.innerHTML = '<i class="fas fa-bolt"></i>';
+                container.appendChild(d);
+            }
+        }
+
+        /* =============================================
+           SUN AI (Day Mode)
+           ============================================= */
+        const sunDialogues = [
+            "Hello new friend! Welcome to the daycare!",
+            "The rules are simple: keep the lights on, NO running, and have FUN!",
+            "This is the Superstar Daycare! The best place in the Pizzaplex!",
+            "Want to play? Explore the ball pit, the slides, the tunnels!",
+            "Rule breaker! Rule breaker! No running in the daycare!",
+            "Hehehe! You're gonna love it here!",
+            "Don't go into the restricted areas... just kidding, everywhere is fun!",
+            "Keep the lights on! That's the most important rule!"
+        ];
+
+        function updateSun(dt) {
+            if (gameState !== GS.DAY || !sunChar) return;
+            const ud = sunChar.userData;
+
+            // Move erratically
+            ud.moveTimer -= dt;
+            if (ud.moveTimer <= 0) {
+                ud.targetPos.set(8 + Math.random() * 28, 0, 8 + Math.random() * 28);
+                ud.moveTimer = 1 + Math.random() * 2;
+            }
+
+            const toTarget = ud.targetPos.clone().sub(sunChar.position);
+            toTarget.y = 0;
+            const dist = toTarget.length();
+            if (dist > 0.5) {
+                toTarget.normalize();
+                const spd = ruleBreakerCount > 1 ? 8 : 4;
+                sunChar.position.x += toTarget.x * spd * dt;
+                sunChar.position.z += toTarget.z * spd * dt;
+                sunChar.lookAt(new THREE.Vector3(ud.targetPos.x, sunChar.position.y, ud.targetPos.z));
+            }
+
+            // Bouncy animation
+            sunChar.position.y = Math.abs(Math.sin(performance.now() * 0.008)) * 0.3;
+            sunChar.rotation.z = Math.sin(performance.now() * 0.005) * 0.1;
+
+            // Dialogue
+            ud.dialogueTimer -= dt;
+            if (ud.dialogueTimer <= 0) {
+                const dlg = ruleBreakerCount > 1 ? sunDialogues[4] : sunDialogues[Math.floor(Math.random() * sunDialogues.length)];
+                showDialogue(dlg, false);
+                ud.dialogueTimer = 4 + Math.random() * 4;
+            }
+
+            // Face player sometimes
+            const toPlayer = playerPos.clone().sub(sunChar.position);
+            if (toPlayer.length() < 8) {
+                sunChar.lookAt(new THREE.Vector3(playerPos.x, sunChar.position.y, playerPos.z));
+            }
+        }
+
+        /* =============================================
+           MOON AI (Night Mode)
+           ============================================= */
+        const moonWaypoints = [
+            new THREE.Vector3(35, 0, 35),
+            new THREE.Vector3(35, 5, 30),
+            new THREE.Vector3(30, 0, 15),
+            new THREE.Vector3(22, 7, 22),
+            new THREE.Vector3(15, 0, 10),
+            new THREE.Vector3(10, 4, 8),
+            new THREE.Vector3(8, 0, 34),
+            new THREE.Vector3(15, 6, 30),
+            new THREE.Vector3(30, 0, 35),
+            new THREE.Vector3(38, 5, 38),
+            new THREE.Vector3(38, 0, 14),
+            new THREE.Vector3(22, 7, 10),
+            new THREE.Vector3(10, 0, 20),
+            new THREE.Vector3(5, 5, 28),
+            new THREE.Vector3(26, 4, 3),
+            new THREE.Vector3(22, 0, 28),
+        ];
+        let moonWaypointIdx = 0;
+
+        function updateMoon(dt) {
+            if (gameState !== GS.NIGHT || !moonChar) return;
+
+            const moonPos = moonChar.position;
+            const playerPos3 = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+            const toPlayer = playerPos3.clone().sub(moonPos);
+            const distToPlayer = toPlayer.length();
+
+            // Detection
+            const detectRange = 6 + playerNoise * 16; // 6 when still, 22 when sprinting
+            moonChasing = distToPlayer < detectRange;
+
+            // Moon disappear/reappear mechanic
+            if (!moonChasing && moonVisible) {
+                moonDisappearTimer -= dt;
+                if (moonDisappearTimer <= 0) {
+                    moonVisible = false;
+                    moonChar.visible = false;
+                    moonDisappearTimer = 3 + Math.random() * 5;
+                }
+            } else if (!moonChasing && !moonVisible) {
+                moonDisappearTimer -= dt;
+                if (moonDisappearTimer <= 0) {
+                    // Reappear near player but not too close
+                    const angle = Math.random() * Math.PI * 2;
+                    const appearDist = 10 + Math.random() * 8;
+                    const newPos = new THREE.Vector3(
+                        playerPos.x + Math.cos(angle) * appearDist,
+                        Math.random() < 0.3 ? 4 + Math.random() * 3 : 0,
+                        playerPos.z + Math.sin(angle) * appearDist
+                    );
+                    // Clamp to room
+                    newPos.x = Math.max(2, Math.min(ROOM_W - 2, newPos.x));
+                    newPos.z = Math.max(2, Math.min(ROOM_D - 2, newPos.z));
+                    moonChar.position.copy(newPos);
+                    moonChar.visible = true;
+                    moonVisible = true;
+                    playWhisper();
+                    moonDisappearTimer = 8 + Math.random() * 10;
+                }
+            }
+
+            if (!moonVisible) return;
+
+            let moveTarget;
+            let speed = moonSpeed;
+
+            if (moonChasing) {
+                moveTarget = playerPos3;
+                speed *= 1.4;
+            } else {
+                // Patrol waypoints
+                moveTarget = moonWaypoints[moonWaypointIdx];
+                const toWP = moveTarget.clone().sub(moonPos);
+                if (toWP.length() < 2) {
+                    moonWaypointIdx = (moonWaypointIdx + 1) % moonWaypoints.length;
+                    moveTarget = moonWaypoints[moonWaypointIdx];
+                }
+            }
+
+            const dir = moveTarget.clone().sub(moonPos);
+            const d = dir.length();
+            if (d > 0.3) {
+                dir.normalize();
+                // Smoothly interpolate Y
+                const targetY = moveTarget.y;
+                moonPos.y += (targetY - moonPos.y) * 2 * dt;
+                moonPos.x += dir.x * speed * dt;
+                moonPos.z += dir.z * speed * dt;
+            }
+
+            // Orient Moon based on Y position (wall/ceiling crawling)
+            if (moonPos.y > 3) {
+                // On ceiling - rotate upside down
+                moonChar.rotation.x = Math.PI;
+                moonChar.rotation.z = 0;
+            } else if (moonPos.y > 1.5) {
+                // On wall - tilt
+                moonChar.rotation.x = -Math.PI / 2 + (moonPos.y - 1.5) * 0.5;
+                moonChar.rotation.z = 0;
+            } else {
+                // On floor
+                moonChar.rotation.x = 0;
+                moonChar.rotation.z = Math.sin(performance.now() * 0.003) * 0.05; // Slight sway
+            }
+
+            // Face movement direction
+            if (moonChasing) {
+                moonChar.lookAt(new THREE.Vector3(playerPos.x, moonPos.y, playerPos.z));
+            }
+
+            // Slow head tilt
+            moonChar.children[1].rotation.z = Math.sin(performance.now() * 0.002) * 0.3; // Head tilt
+
+            // Catch player
+            if (distToPlayer < 1.5 && moonChasing) {
+                triggerJumpscare();
+                return;
+            }
+
+            // Danger indicator
+            document.getElementById('dangerInd').style.display = distToPlayer < 10 ? 'block' : 'none';
+
+            // Screen shake when close
+            const canvas = renderer.domElement;
+            if (distToPlayer < 8) {
+                canvas.classList.add('shaking');
+            } else {
+                canvas.classList.remove('shaking');
+            }
+
+            // Flashlight flicker when Moon near
+            if (flashlightOn && distToPlayer < 12) {
+                flashlightObj.intensity = 3 * (0.5 + Math.random() * 0.5);
+            } else if (flashlightOn) {
+                flashlightObj.intensity = 3;
+            }
+
+            // Scraping sounds
+            moonScrapeTimer -= dt;
+            if (moonScrapeTimer <= 0 && distToPlayer < 15) {
+                playScrape();
+                moonScrapeTimer = 1.5 + Math.random() * 3;
+            }
+
+            // Whispers
+            whisperTimer -= dt;
+            if (whisperTimer <= 0 && distToPlayer < 12) {
+                playWhisper();
+                whisperTimer = 4 + Math.random() * 6;
+            }
+        }
+
+        /* =============================================
+           HORROR EFFECTS
+           ============================================= */
+        function updateHorrorEffects(dt) {
+            if (gameState !== GS.NIGHT) return;
+
+            // Random flicker
+            flickerTimer -= dt;
+            if (flickerTimer <= 0) {
+                if (flashlightOn && Math.random() < 0.3) {
+                    flashlightObj.visible = false;
+                    setTimeout(() => { if (flashlightOn && flashlightObj) flashlightObj.visible = true; }, 50 + Math.random() * 100);
+                }
+                flickerTimer = 0.5 + Math.random() * 3;
+            }
+
+            // Glitch overlay occasionally
+            if (Math.random() < 0.002) {
+                const ov = document.getElementById('glitchOv');
+                ov.style.display = 'block';
+                ov.style.background = `rgba(${Math.random() * 50},${0},${Math.random() * 50},${0.1 + Math.random() * 0.15})`;
+                ov.style.transform = `translate(${(Math.random() - 0.5) * 10}px, ${(Math.random() - 0.5) * 5}px)`;
+                setTimeout(() => { ov.style.display = 'none'; }, 50 + Math.random() * 100);
+            }
+
+            // Vignette intensity based on danger
+            const vig = document.getElementById('vignette');
+            const moonDist = moonChar ? moonChar.position.distanceTo(new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z)) : 999;
+            const vigIntensity = moonDist < 15 ? 0.85 - (moonDist / 15) * 0.4 : 0.5;
+            vig.style.background = `radial-gradient(ellipse at center, transparent ${30 - moonDist}%, rgba(0,0,0,${vigIntensity}) 100%)`;
+        }
+
+        /* =============================================
+           DIALOGUE SYSTEM
+           ============================================= */
+        let dialogueTimeout;
+        function showDialogue(text, isMoon) {
+            const d = document.getElementById('dialogue');
+            d.textContent = text;
+            d.className = isMoon ? 'moon-dlg' : '';
+            d.style.display = 'block';
+            d.style.animation = 'none';
+            d.offsetHeight; // reflow
+            d.style.animation = 'dIn 0.25s ease-out';
+            clearTimeout(dialogueTimeout);
+            dialogueTimeout = setTimeout(() => { d.style.display = 'none'; }, 3500);
+        }
+
+        /* =============================================
+           TRANSITION EVENT
+           ============================================= */
+        function startTransition() {
+            gameState = GS.TRANSITION;
+            stopDayMusic();
+            sunChar.visible = false;
+            document.getElementById('rulesWarn').style.display = 'none';
+
+            // Sun panic dialogue
+            showDialogue("NO! NO! NO! LIGHTS OFF! LIGHTS OFF!", false);
+
+            const bo = document.getElementById('blackout');
+
+            // Phase 1: Flickering (2 seconds)
+            let flickCount = 0;
+            const flickInterval = setInterval(() => {
+                flickCount++;
+                if (flickCount % 2 === 0) {
+                    bo.style.opacity = '0.7';
+                } else {
+                    bo.style.opacity = '0';
+                }
+                // Glitch
+                const ov = document.getElementById('glitchOv');
+                ov.style.display = 'block';
+                ov.style.background = `rgba(${Math.random() * 100},0,${Math.random() * 100},0.2)`;
+                ov.style.transform = `translate(${(Math.random() - 0.5) * 20}px, ${(Math.random() - 0.5) * 10}px) skewX(${(Math.random() - 0.5) * 5}deg)`;
+            }, 100);
+
+            // Phase 2: Full blackout (after 2s)
+            setTimeout(() => {
+                clearInterval(flickInterval);
+                bo.style.opacity = '1';
+                document.getElementById('glitchOv').style.display = 'none';
+            }, 2000);
+
+            // Phase 3: Silence then phase text (after 3s)
+            setTimeout(() => {
+                const pt = document.getElementById('phaseText');
+                pt.textContent = 'LIGHTS OUT';
+                pt.style.display = 'block';
+                pt.style.opacity = '0';
+                let fadeIn = setInterval(() => {
+                    pt.style.opacity = parseFloat(pt.style.opacity || 0) + 0.05;
+                    if (parseFloat(pt.style.opacity) >= 1) clearInterval(fadeIn);
+                }, 30);
+            }, 3000);
+
+            // Phase 4: Start night mode (after 5s)
+            setTimeout(() => {
+                document.getElementById('phaseText').style.display = 'none';
+                bo.style.opacity = '0';
+                setTimeout(() => { bo.style.display = 'none'; }, 100);
+                startNightMode();
+            }, 5000);
+        }
+
+        /* =============================================
+           NIGHT MODE START
+           ============================================= */
+        function startNightMode() {
+            gameState = GS.NIGHT;
+            setupNightLighting();
+            startNightAmbience();
+            moonChar.visible = true;
+            moonVisible = true;
+            moonChar.position.set(35, 0, 35);
+            document.getElementById('vignette').style.display = 'block';
+            document.getElementById('scanlines').style.display = 'block';
+            flashlightOn = true;
+            if (flashlightObj) flashlightObj.visible = true;
+            updateGenHUD();
+            showDialogue("Find the generators... before he finds you.", true);
+
+            // Make wall materials darker
+            wallMeshes.forEach(w => {
+                w.material.color.multiplyScalar(0.15);
+                w.material.emissive = new THREE.Color(0x000000);
+            });
+            // Darken floor
+            if (floorMesh) floorMesh.material.color.multiplyScalar(0.1);
+            // Darken decorations
+            scene.traverse(obj => {
+                if (obj.isMesh && !wallMeshes.includes(obj) && obj !== floorMesh && obj !== ceilMesh) {
+                    if (obj.material && obj.material.color) {
+                        obj.material.color.multiplyScalar(0.12);
+                        if (obj.material.emissive) obj.material.emissiveIntensity *= 0.1;
+                    }
+                }
+            });
+            // Ball pit balls darker
+            if (ballPitMesh) ballPitMesh.forEach(im => { im.material.color.multiplyScalar(0.15); });
+
+            // Change ceiling to dark
+            if (ceilMesh) ceilMesh.material.color.set(0x050510);
+        }
+
+        /* =============================================
+           JUMPSCARE
+           ============================================= */
+        function triggerJumpscare() {
+            gameState = GS.JUMPSCARE;
+            playJumpscareSnd();
+            stopNightAmbience();
+            document.getElementById('vignette').style.display = 'none';
+            document.getElementById('scanlines').style.display = 'none';
+            document.getElementById('dangerInd').style.display = 'none';
+            renderer.domElement.classList.remove('shaking');
+            document.exitPointerLock();
+
+            // Draw Moon face on canvas for jumpscare
+            const jsc = document.getElementById('jumpscare');
+            jsc.style.display = 'flex';
+            const c = document.createElement('canvas');
+            c.width = 800; c.height = 800;
+            const ctx = c.getContext('2d');
+
+            // Dark background with red tint
+            ctx.fillStyle = '#0a0008';
+            ctx.fillRect(0, 0, 800, 800);
+
+            // Moon face
+            const cx = 400, cy = 380;
+            // Face shape
+            ctx.fillStyle = '#1a1a3a';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 220, 260, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crescent
+            ctx.fillStyle = '#222255';
+            ctx.beginPath();
+            ctx.ellipse(cx + 80, cy - 120, 120, 100, -0.3, 0, Math.PI);
+            ctx.fill();
+
+            // Eyes - glowing red
+            ctx.shadowColor = '#ff0000';
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.ellipse(cx - 70, cy - 30, 35, 45, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + 70, cy - 30, 35, 45, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(cx - 70, cy - 30, 12, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + 70, cy - 30, 12, 18, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Mouth - wide open, menacing
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 100, 100, 60, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Teeth
+            ctx.fillStyle = '#cccccc';
+            for (let i = 0; i < 8; i++) {
+                const tx = cx - 80 + i * 23;
+                ctx.fillRect(tx, cy + 50, 15, 25);
+                ctx.fillRect(tx, cy + 110, 15, 25);
+            }
+
+            ctx.shadowBlur = 0;
+            jsc.innerHTML = '';
+            jsc.appendChild(c);
+
+            // Shake the jumpscare
+            jsc.style.animation = 'shk 0.08s linear infinite';
+
+            // After 1.5s, show lose screen
+            setTimeout(() => {
+                jsc.style.display = 'none';
+                jsc.style.animation = '';
+                document.getElementById('loseScr').style.display = 'flex';
+                gameState = GS.LOSE;
+            }, 1500);
+        }
+
+        /* =============================================
+           WIN GAME
+           ============================================= */
+        function winGame() {
+            gameState = GS.WIN;
+            stopNightAmbience();
+            moonChar.visible = false;
+            document.getElementById('vignette').style.display = 'none';
+            document.getElementById('scanlines').style.display = 'none';
+            document.getElementById('dangerInd').style.display = 'none';
+            renderer.domElement.classList.remove('shaking');
+            document.exitPointerLock();
+
+            // Restore lights
+            ambientLight.intensity = 0.8;
+            ambientLight.color.set(0xfff5e0);
+            dayLights.forEach(l => { l.intensity = l instanceof THREE.PointLight ? 1.0 : (l instanceof THREE.DirectionalLight ? 1.5 : 0.8); });
+            scene.fog.color.set(0xfff5e0);
+            scene.fog.near = 1; scene.fog.far = 40;
+            scene.background.set(0xfff5e0);
+            renderer.toneMappingExposure = 1.2;
+
+            // Show sun
+            sunChar.visible = true;
+            sunChar.position.set(playerPos.x + 2, 0, playerPos.z);
+            showDialogue("You are safe now! The lights are back on!", false);
+
+            setTimeout(() => {
+                document.getElementById('winScr').style.display = 'flex';
+            }, 3000);
+        }
+
+        /* =============================================
+           GAME LOOP
+           ============================================= */
+        const clock = new THREE.Clock();
+        let interactCheckTimer = 0;
+
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            const dt = Math.min(clock.getDelta(), 0.05);
+
+            if (gameState === GS.DAY) {
+                dayTimer += dt;
+                updatePlayer(dt);
+                updateSun(dt);
+
+                // Auto-trigger transition after DAY_DURATION or if player reaches center
+                const distToCenter = Math.sqrt((playerPos.x - 22) ** 2 + (playerPos.z - 22) ** 2);
+                if (dayTimer > DAY_DURATION || (distToCenter < 5 && dayTimer > 10)) {
+                    startTransition();
+                }
+            }
+
+            if (gameState === GS.NIGHT) {
+                genCooldown = Math.max(0, genCooldown - dt);
+                updatePlayer(dt);
+                updateMoon(dt);
+                updateHorrorEffects(dt);
+
+                // Check if near generator for prompt
+                interactCheckTimer -= dt;
+                if (interactCheckTimer <= 0) {
+                    interactCheckTimer = 0.2;
+                    let nearGen = false;
+                    for (const gen of generatorObjects) {
+                        if (gen.activated) continue;
+                        const gp = gen.pos;
+                        const d = Math.sqrt((playerPos.x - gp.x) ** 2 + (playerPos.z - gp.z) ** 2);
+                        if (d < 3) { nearGen = true; break; }
+                    }
+                    document.getElementById('interactP').style.display = nearGen ? 'block' : 'none';
+                }
+            }
+
+            // Animate ball pit slightly
+            if (ballPitMesh && gameState === GS.DAY) {
+                ballPitMesh.forEach(im => {
+                    const dummy = new THREE.Object3D();
+                    const count = im.count;
+                    for (let i = 0; i < Math.min(count, 20); i++) {
+                        im.getMatrixAt(i, dummy.matrix);
+                        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+                        dummy.position.y += Math.sin(performance.now() * 0.003 + i) * 0.002;
+                        dummy.updateMatrix();
+                        im.setMatrixAt(i, dummy.matrix);
+                    }
+                    im.instanceMatrix.needsUpdate = true;
+                });
+            }
+
+            // Update HUD
+            if (gameState === GS.DAY || gameState === GS.NIGHT) {
+                document.getElementById('staBar').style.width = stamina + '%';
+                document.getElementById('batBar').style.width = battery + '%';
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        /* =============================================
+           INITIALIZATION
+           ============================================= */
+        function init() {
+            // Menu stars
+            const starsEl = document.getElementById('menuStars');
+            for (let i = 0; i < 40; i++) {
+                const s = document.createElement('div');
+                s.className = 'star';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.top = Math.random() * 100 + '%';
+                s.style.animationDelay = Math.random() * 2 + 's';
+                s.style.width = s.style.height = (2 + Math.random() * 3) + 'px';
+                starsEl.appendChild(s);
+            }
+
+            buildEnvironment();
+            setupDayLighting();
+            buildGenerators();
+            sunChar = createSun();
+            moonChar = createMoon();
+
+            // Initial camera position
+            camera.position.set(playerPos.x, playerPos.y + playerY, playerPos.z);
+            scene.add(camera);
+
+            // Play button
+            document.getElementById('playBtn').addEventListener('click', () => {
+                initAudio();
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('hud').style.display = 'block';
+                document.getElementById('crosshair').style.display = 'block';
+                gameState = GS.DAY;
+                startDayMusic();
+                renderer.domElement.requestPointerLock();
+                // Sun greeting
+                setTimeout(() => showDialogue("Hello new friend! Welcome to the Superstar Daycare!", false), 500);
+            });
+
+            gameLoop();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
