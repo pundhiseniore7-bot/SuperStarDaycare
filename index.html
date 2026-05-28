@@ -1,1 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Superstar Daycare</title>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0A1A;--panel:rgba(10,10,30,0.88);--text:#E8E8F0;--accent:#FF4444;--success:#00FF88;--warn:#FFB800;--muted:#6A6A8A}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--text);touch-action:none}
+canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;padding:10px 14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:10;opacity:0;transition:opacity .5s}
+#hud.show{opacity:1}
+.hud-box{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;font-size:14px;font-weight:600;letter-spacing:.5px;backdrop-filter:blur(4px)}
+#gen-counter{color:var(--success)}
+#battery-box{color:var(--warn);display:flex;align-items:center;gap:6px}
+#battery-bar{width:50px;height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
+#battery-fill{height:100%;background:var(--warn);border-radius:5px;transition:width .3s}
+#battery-fill.low{background:var(--accent);animation:blink .5s infinite}
+#stamina-wrap{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);width:120px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;z-index:10;opacity:0;transition:opacity .3s;pointer-events:none}
+#stamina-wrap.show{opacity:1}
+#stamina-fill{height:100%;background:#4ECDC4;border-radius:3px;transition:width .1s}
+/* Controls */
+#controls{position:fixed;bottom:0;left:0;right:0;height:180px;z-index:10;pointer-events:none;opacity:0;transition:opacity .5s}
+#controls.show{opacity:1}
+#joystick-zone{position:absolute;left:10px;bottom:10px;width:130px;height:130px;pointer-events:auto}
+#joystick-base{width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);position:relative}
+#joystick-thumb{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.3);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);transition:none}
+#action-buttons{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+.act-btn{width:56px;height:56px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:20px;flex-direction:column;backdrop-filter:blur(4px);cursor:pointer}
+.act-btn:active{background:rgba(255,255,255,.2);transform:scale(.93)}
+.act-btn .lbl{font-size:8px;font-weight:600;margin-top:2px;opacity:.7}
+#look-zone{position:absolute;right:80px;bottom:10px;left:150px;top:10px;pointer-events:auto}
+/* Dialogue */
+#dialogue-box{position:fixed;bottom:30px;left:15px;right:15px;background:var(--panel);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:18px 22px;z-index:20;opacity:0;transform:translateY(20px);transition:all .4s;pointer-events:none;backdrop-filter:blur(8px)}
+#dialogue-box.show{opacity:1;transform:translateY(0);pointer-events:auto}
+#speaker-name{font-family:'Creepster',cursive;font-size:18px;margin-bottom:6px}
+#speaker-name.sun{color:#FFD700}
+#speaker-name.moon{color:#8866FF}
+#dialogue-text{font-size:17px;line-height:1.5;min-height:50px}
+#tap-continue{font-size:12px;color:var(--muted);text-align:right;margin-top:8px;animation:blink 1.2s infinite}
+/* Screens */
+.screen-overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#start-screen{background:radial-gradient(ellipse at 50% 40%,#1A1028 0%,#0A0A1A 70%)}
+#start-screen .title{font-family:'Creepster',cursive;font-size:clamp(36px,8vw,64px);color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.3),0 0 60px rgba(255,215,0,.1);margin-bottom:8px;letter-spacing:2px}
+#start-screen .subtitle{font-size:clamp(13px,3vw,18px);color:var(--muted);margin-bottom:40px;letter-spacing:3px;text-transform:uppercase}
+.menu-btn{width:200px;padding:14px 0;border:2px solid rgba(255,215,0,.3);border-radius:8px;background:rgba(255,215,0,.08);color:#FFD700;font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;letter-spacing:2px;cursor:pointer;margin:6px 0;transition:all .2s;text-transform:uppercase}
+.menu-btn:hover,.menu-btn:active{background:rgba(255,215,0,.2);border-color:rgba(255,215,0,.6);transform:scale(1.03)}
+.menu-btn.secondary{border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:var(--text);font-size:15px}
+#game-over-screen{background:rgba(10,0,0,.95);opacity:0;pointer-events:none}
+#game-over-screen.show{opacity:1;pointer-events:auto}
+#game-over-screen .go-title{font-family:'Creepster',cursive;font-size:clamp(40px,10vw,72px);color:var(--accent);text-shadow:0 0 40px rgba(255,0,0,.4);margin-bottom:10px}
+#game-over-screen .go-sub{color:var(--muted);margin-bottom:40px;font-size:16px}
+#win-screen{background:radial-gradient(ellipse at 50% 40%,#2A2010 0%,#0A0A0A 70%);opacity:0;pointer-events:none}
+#win-screen.show{opacity:1;pointer-events:auto}
+#win-screen .win-title{font-family:'Creepster',cursive;font-size:clamp(36px,9vw,64px);color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.3);margin-bottom:10px}
+#win-screen .win-sub{color:var(--success);margin-bottom:40px;font-size:16px}
+/* Settings */
+#settings-screen{background:rgba(5,5,20,.95);opacity:0;pointer-events:none;z-index:55}
+#settings-screen.show{opacity:1;pointer-events:auto}
+#settings-screen h2{font-family:'Creepster',cursive;font-size:28px;color:var(--text);margin-bottom:30px}
+.setting-row{width:280px;margin:12px 0;display:flex;flex-direction:column;gap:4px}
+.setting-row label{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.setting-row input[type=range]{width:100%;accent-color:#FFD700;height:6px;cursor:pointer}
+.setting-row .val{font-size:12px;color:var(--text);text-align:right}
+/* Jumpscare */
+#jumpscare{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
+#jumpscare.show{opacity:1;pointer-events:auto}
+#jumpscare canvas{width:100%;height:100%}
+/* Transition */
+#transition{position:fixed;inset:0;z-index:40;background:#000;opacity:0;pointer-events:none}
+#transition.show{opacity:1;pointer-events:auto}
+/* Particles for start screen */
+.particle{position:absolute;border-radius:50%;pointer-events:none;animation:float linear infinite}
+@keyframes float{0%{transform:translateY(0) scale(1);opacity:.6}50%{opacity:1}100%{transform:translateY(-100vh) scale(.5);opacity:0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shake{0%,100%{transform:translate(0)}10%{transform:translate(-8px,5px)}20%{transform:translate(7px,-6px)}30%{transform:translate(-5px,8px)}40%{transform:translate(6px,-4px)}50%{transform:translate(-7px,3px)}60%{transform:translate(4px,-7px)}70%{transform:translate(-3px,5px)}80%{transform:translate(5px,-3px)}90%{transform:translate(-4px,6px)}}
+.shaking{animation:shake .4s ease-in-out}
+/* Flashlight flicker overlay */
+#flicker-overlay{position:fixed;inset:0;z-index:5;pointer-events:none;background:transparent;opacity:0;transition:opacity .05s}
+@media(min-width:768px){.act-btn{width:64px;height:64px}#joystick-zone{width:150px;height:150px}#joystick-base{width:150px;height:150px}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="flicker-overlay"></div>
 
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-box" id="gen-counter">GEN: 0/5</div>
+  <div class="hud-box" id="battery-box">
+    <span id="battery-text">100%</span>
+    <div id="battery-bar"><div id="battery-fill" style="width:100%"></div></div>
+  </div>
+</div>
+<div id="stamina-wrap"><div id="stamina-fill" style="width:100%"></div></div>
+
+<!-- Controls -->
+<div id="controls">
+  <div id="joystick-zone"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
+  <div id="look-zone"></div>
+  <div id="action-buttons">
+    <div class="act-btn" id="btn-flash">🔦<span class="lbl">LIGHT</span></div>
+    <div class="act-btn" id="btn-sprint">🏃<span class="lbl">RUN</span></div>
+    <div class="act-btn" id="btn-interact">🔧<span class="lbl">USE</span></div>
+  </div>
+</div>
+
+<!-- Dialogue -->
+<div id="dialogue-box">
+  <div id="speaker-name"></div>
+  <div id="dialogue-text"></div>
+  <div id="tap-continue">TAP TO CONTINUE</div>
+</div>
+
+<!-- Start Screen -->
+<div class="screen-overlay" id="start-screen">
+  <div class="title">SUPERSTAR DAYCARE</div>
+  <div class="subtitle">Security Protocol v2.1</div>
+  <button class="menu-btn" id="btn-play">PLAY</button>
+  <button class="menu-btn secondary" id="btn-settings">SETTINGS</button>
+</div>
+
+<!-- Settings -->
+<div class="screen-overlay" id="settings-screen">
+  <h2>SETTINGS</h2>
+  <div class="setting-row">
+    <label>Brightness <span class="val" id="val-bright">100%</span></label>
+    <input type="range" id="sl-bright" min="50" max="150" value="100">
+  </div>
+  <div class="setting-row">
+    <label>Flashlight Intensity <span class="val" id="val-flash">100%</span></label>
+    <input type="range" id="sl-flash" min="60" max="160" value="100">
+  </div>
+  <div class="setting-row">
+    <label>Joystick Sensitivity <span class="val" id="val-sens">100%</span></label>
+    <input type="range" id="sl-sens" min="50" max="200" value="100">
+  </div>
+  <button class="menu-btn" id="btn-settings-back" style="margin-top:30px">BACK</button>
+</div>
+
+<!-- Transition -->
+<div id="transition"></div>
+
+<!-- Jumpscare -->
+<div id="jumpscare"><canvas id="jumpscare-canvas"></canvas></div>
+
+<!-- Game Over -->
+<div class="screen-overlay" id="game-over-screen">
+  <div class="go-title">GAME OVER</div>
+  <div class="go-sub">The lights went out... permanently.</div>
+  <button class="menu-btn" id="btn-retry">TRY AGAIN</button>
+</div>
+
+<!-- Win Screen -->
+<div class="screen-overlay" id="win-screen">
+  <div class="win-title">YOU SURVIVED</div>
+  <div class="win-sub">The lights are back on. Sun is happy.</div>
+  <button class="menu-btn" id="btn-replay">PLAY AGAIN</button>
+</div>
+
+<script>
+/* ============================================================
+   CONFIGURATION
+   ============================================================ */
+const TILE = 40;
+const MAP_W = 25, MAP_H = 25;
+const PLAYER_R = 10;
+const PLAYER_WALK = 130;
+const PLAYER_SPRINT = 210;
+const BALL_PIT_SLOW = 0.65;
+const MOON_BASE_SPEED = 70;
+const INTERACT_DIST = 55;
+const GEN_TIME = 2.8;
+const MAX_STAMINA = 100;
+const STAMINA_DRAIN = 28;
+const STAMINA_REGEN = 15;
+const BATTERY_MAX = 100;
+const BATTERY_DRAIN = 1.8;
+const DETECT_BASE = 5.5;
+const DETECT_SPRINT_BONUS = 3;
+const DETECT_STILL = 2;
+const EYE_VISIBLE = 14;
+
+/* Map: 0=wall, 1=floor, 2=ballpit, 3=slide, 4=tunnel, 5=generator, 6=stage, 7=hiding */
+const MAP = [
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+[0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
+[0,1,1,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
+[0,1,1,2,2,2,5,1,1,1,1,1,1,1,1,1,1,1,1,3,3,3,1,1,0],
+[0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,0],
+[0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,0],
+[0,0,0,1,0,0,0,1,0,1,7,1,1,1,0,1,1,1,1,0,0,1,0,0,0],
+[0,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,0],
+[0,1,1,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0],
+[0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0],
+[0,1,7,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,1,7,1,1,0],
+[0,1,1,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,1,1,1,1,0],
+[0,1,1,1,0,1,6,6,6,6,6,6,6,6,1,1,1,0,1,1,5,1,1,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0],
+[0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+[0,1,5,4,4,1,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,0],
+[0,1,4,4,4,1,1,1,7,1,1,1,7,1,1,4,4,4,1,1,5,1,1,1,0],
+[0,1,4,4,4,1,1,1,1,1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,5,1,1,1,1,1,1,1,1,1,1,1,1,0],
+[0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0],
+[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+];
+
+/* Generator positions (col, row) */
+const GEN_POS = [[6,5],[2,19],[21,15],[21,20],[11,22]];
+/* Moon start tile */
+const MOON_START = {col:10, row:13};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = 'start'; // start, dialogue, transition, night, jumpscare, gameover, win
+let settings = {brightness:1, flashlight:1, sensitivity:1};
+let player = {x:0,y:0,vx:0,vy:0,stamina:MAX_STAMINA,sprinting:false,hiding:false,hidden:false,facing:0};
+let moon = {x:0,y:0,path:[],pathIdx:0,speedMul:0.45,detectRange:DETECT_BASE,hunting:false,patrolTarget:null,lostTimer:0,pathTimer:0};
+let flashlight = {on:true,battery:BATTERY_MAX,flickerTimer:0};
+let generators = {};
+let genCount = 0;
+let cam = {x:0,y:0,lookX:0,lookY:0};
+let input = {jx:0,jy:0,sprint:false,interact:false,flashToggle:false};
+let dialogue = {lines:[],idx:0,charIdx:0,timer:0,done:false,speaker:'',text:''};
+let interactState = {target:null,progress:0,active:false};
+let moonDist = 999;
+let lastTime = 0;
+let dt = 0;
+
+/* ============================================================
+   CANVAS SETUP
+   ============================================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const darkCanvas = document.createElement('canvas');
+const darkCtx = darkCanvas.getContext('2d');
+const mapCanvas = document.createElement('canvas');
+const mapCtx = mapCanvas.getContext('2d');
+mapCanvas.width = MAP_W * TILE;
+mapCanvas.height = MAP_H * TILE;
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  darkCanvas.width = canvas.width;
+  darkCanvas.height = canvas.height;
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ============================================================
+   PRE-RENDER MAP
+   ============================================================ */
+function prerenderMap() {
+  const wallColors = ['#FFB5C2','#FFEAA7','#B5EAD7','#C7CEEA','#FFDAC1','#E2F0CB'];
+  const ballColors = ['#FF6B6B','#4ECDC4','#FFE66D','#FF6B9D','#6BCB77','#4D96FF','#FF9FF3','#FFEAA7'];
+  for (let r = 0; r < MAP_H; r++) {
+    for (let c = 0; c < MAP_W; c++) {
+      const x = c * TILE, y = r * TILE, t = MAP[r][c];
+      if (t === 0) {
+        const ci = (c * 7 + r * 13) % wallColors.length;
+        ctx = mapCtx;
+        /* Top half pastel */
+        ctx.fillStyle = wallColors[ci];
+        ctx.fillRect(x, y, TILE, TILE * 0.55);
+        /* Bottom wood */
+        ctx.fillStyle = '#8B6914';
+        ctx.fillRect(x, y + TILE * 0.55, TILE, TILE * 0.45);
+        ctx.fillStyle = '#6B4F12';
+        ctx.fillRect(x, y + TILE * 0.53, TILE, 3);
+        /* Shadow edges */
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.fillRect(x + TILE - 2, y, 2, TILE);
+        ctx.fillRect(x, y + TILE - 2, TILE, 2);
+      } else if (t === 1) {
+        const l = (c + r) % 2 === 0;
+        mapCtx.fillStyle = l ? '#F5E6CA' : '#EDD9B8';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.strokeStyle = 'rgba(0,0,0,0.04)';
+        mapCtx.lineWidth = 0.5;
+        mapCtx.strokeRect(x, y, TILE, TILE);
+      } else if (t === 2) {
+        mapCtx.fillStyle = '#F0E0C0';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        const rng = (c * 31 + r * 17) % 100;
+        for (let i = 0; i < 8; i++) {
+          mapCtx.fillStyle = ballColors[(rng + i * 7) % ballColors.length];
+          const bx = x + 4 + ((rng + i * 13) % (TILE - 8));
+          const by = y + 4 + ((rng + i * 23) % (TILE - 8));
+          mapCtx.beginPath();
+          mapCtx.arc(bx, by, 3 + (i % 3), 0, Math.PI * 2);
+          mapCtx.fill();
+        }
+      } else if (t === 3) {
+        mapCtx.fillStyle = (c + r) % 2 === 0 ? '#F5E6CA' : '#EDD9B8';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.fillStyle = '#E74C3C';
+        mapCtx.beginPath();
+        mapCtx.moveTo(x + 2, y + 2);
+        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.35);
+        mapCtx.lineTo(x + TILE - 2, y + TILE - 2);
+        mapCtx.lineTo(x + 2, y + TILE * 0.65);
+        mapCtx.closePath();
+        mapCtx.fill();
+        mapCtx.fillStyle = '#FF6B6B';
+        mapCtx.beginPath();
+        mapCtx.moveTo(x + 2, y + 2);
+        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.35);
+        mapCtx.lineTo(x + TILE - 2, y + TILE * 0.4);
+        mapCtx.lineTo(x + 2, y + TILE * 0.08);
+        mapCtx.closePath();
+        mapCtx.fill();
+      } else if (t === 4) {
+        mapCtx.fillStyle = '#1E0E3A';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.fillStyle = '#120828';
+        mapCtx.beginPath();
+        mapCtx.ellipse(x + TILE / 2, y + TILE / 2, TILE * 0.38, TILE * 0.32, 0, 0, Math.PI * 2);
+        mapCtx.fill();
+        mapCtx.strokeStyle = '#6B3FA0';
+        mapCtx.lineWidth = 2;
+        mapCtx.stroke();
+      } else if (t === 5) {
+        mapCtx.fillStyle = '#F5E6CA';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.fillStyle = '#444';
+        mapCtx.fillRect(x + 8, y + 8, TILE - 16, TILE - 16);
+        mapCtx.fillStyle = '#555';
+        mapCtx.fillRect(x + 10, y + 10, TILE - 20, TILE - 20);
+        mapCtx.fillStyle = '#FF2222';
+        mapCtx.beginPath();
+        mapCtx.arc(x + TILE / 2, y + 14, 3, 0, Math.PI * 2);
+        mapCtx.fill();
+        mapCtx.fillStyle = '#777';
+        mapCtx.font = 'bold 7px Rajdhani';
+        mapCtx.fillText('GEN', x + 12, y + TILE - 10);
+      } else if (t === 6) {
+        mapCtx.fillStyle = '#C4956A';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.strokeStyle = '#A87D5A';
+        mapCtx.lineWidth = 0.8;
+        for (let i = 0; i < 4; i++) {
+          mapCtx.beginPath();
+          mapCtx.moveTo(x, y + 6 + i * 10);
+          mapCtx.lineTo(x + TILE, y + 8 + i * 10);
+          mapCtx.stroke();
+        }
+        mapCtx.fillStyle = 'rgba(0,0,0,0.08)';
+        mapCtx.fillRect(x, y + TILE - 5, TILE, 5);
+      } else if (t === 7) {
+        mapCtx.fillStyle = '#F5E6CA';
+        mapCtx.fillRect(x, y, TILE, TILE);
+        mapCtx.fillStyle = '#7A5C2E';
+        mapCtx.fillRect(x + 5, y + 10, TILE - 10, TILE - 14);
+        mapCtx.fillStyle = '#9A7A3E';
+        mapCtx.fillRect(x + 3, y + 7, TILE - 6, 6);
+        mapCtx.fillStyle = 'rgba(0,0,0,0.1)';
+        mapCtx.fillRect(x + 5, y + TILE - 6, TILE - 10, 3);
+      }
+    }
+  }
+}
+prerenderMap();
+
+/* ============================================================
